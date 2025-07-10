@@ -23,6 +23,9 @@ const CONFETTI_COLORS = [
 ];
 function Confetti({ trigger }: { trigger: number }) {
   const [confetti, setConfetti] = useState<ConfettiPiece[]>([]);
+  const [hasMounted, setHasMounted] = useState(false);
+  // Only render portal after mount to avoid hydration mismatch
+  useEffect(() => { setHasMounted(true); }, []);
   // Launch confetti when trigger changes
   useEffect(() => {
     if (!trigger) return;
@@ -55,8 +58,7 @@ function Confetti({ trigger }: { trigger: number }) {
     requestAnimationFrame(animate);
     return () => { running = false; };
   }, [confetti.length]);
-  // Render confetti in a portal to the body for full viewport coverage
-  if (typeof window === "undefined") return null;
+  if (!hasMounted) return null;
   return createPortal(
     <div style={{ pointerEvents: 'none', position: 'fixed', inset: 0, zIndex: 1000 }}>
       {confetti.map((c) => (

@@ -27,6 +27,15 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        {/* SVG filter for pixelation effect */}
+        <svg style={{ display: "none" }}>
+          <filter id="pixelate" x="0" y="0">
+            <feFlood x="4" y="4" height="2" width="2" />
+            <feComposite width="2" height="2" />
+            <feTile result="a" />
+            <feComposite in="SourceGraphic" in2="a" operator="in" />
+          </filter>
+        </svg>
         {children}
       </body>
     </html>

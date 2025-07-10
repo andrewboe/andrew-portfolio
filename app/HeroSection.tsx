@@ -197,17 +197,6 @@ export default function HeroSection() {
             More About Me
           </a>
         </div>
-        {/* Right: Pixel avatar or fun pixel art (optional) */}
-        <div className="flex-1 flex items-center justify-center">
-          <img
-            src="/avatar-pixel.png"
-            alt="Pixel Avatar"
-            className="w-40 h-40 sm:w-56 sm:h-56 object-contain drop-shadow-pixel"
-            draggable={false}
-            style={{ imageRendering: 'pixelated' }}
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-          />
-        </div>
       </div>
     </header>
   );

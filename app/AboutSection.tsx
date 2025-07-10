@@ -22,6 +22,8 @@ export default function AboutSection() {
   const [snowflakes, setSnowflakes] = useState<Snowflake[]>([]);
   const [aboutMouse, setAboutMouse] = useState<{ x: number; y: number } | null>(null);
   const [pooledSnow, setPooledSnow] = useState<PooledSnow[]>([]);
+  // Unique id for pooled snow
+  const pooledSnowId = useRef(0);
 
   // Initialize snowflakes
   useEffect(() => {
@@ -40,6 +42,7 @@ export default function AboutSection() {
   useEffect(() => {
     let animationFrame: number;
     const animate = () => {
+      let newPooled: { id: number; x: number; created: number }[] = [];
       setSnowflakes((flakes) =>
         flakes.map((flake) => {
           let { x, y, speedY, speedX } = flake;
@@ -67,10 +70,8 @@ export default function AboutSection() {
           y += speedY;
           // Pool snow at bottom
           if (y > 100) {
-            setPooledSnow((prev) => [
-              ...prev,
-              { id: Date.now() + Math.random(), x, created: Date.now() },
-            ]);
+            pooledSnowId.current += 1;
+            newPooled.push({ id: pooledSnowId.current, x, created: Date.now() });
             return {
               ...flake,
               x: Math.random() * 100,
@@ -92,6 +93,13 @@ export default function AboutSection() {
           return { ...flake, x, y, speedX };
         })
       );
+      // Batch update pooled snow once per frame
+      if (newPooled.length > 0) {
+        setPooledSnow((prev) => [
+          ...prev,
+          ...newPooled,
+        ]);
+      }
       // Remove old pooled snow
       setPooledSnow((prev) => prev.filter((dot) => Date.now() - dot.created < POOLED_SNOW_LIFETIME));
       animationFrame = requestAnimationFrame(animate);
@@ -174,6 +182,12 @@ export default function AboutSection() {
           <p className="text-base sm:text-lg text-left text-muted-foreground mb-2 w-full max-w-2xl">
             My main stack includes React, Next.js, and TypeScript, but I'm always eager to learn new tools and frameworks.
           </p>
+          <a
+            href="#projects"
+            className="inline-block bg-primary text-background font-semibold py-3 px-8 shadow-pixel border-2 border-red-600 slide-up mt-4 text-lg hover:bg-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-primary border-pixel"
+          >
+            View My Work
+          </a>
         </div>
         {/* Right: Skills & Tools */}
         <div className="flex-1 flex flex-col items-center w-full">

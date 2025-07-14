@@ -2,23 +2,95 @@ import mongoose from 'mongoose';
 import { schedule } from 'node-cron';
 import sgMail from '@sendgrid/mail';
 
-if (!process.env.MONGODB_URI) {
-  throw new Error('Please add your Mongo URI to .env.local');
+// Validate required environment variables
+const requiredEnvVars = {
+  MONGODB_URI: process.env.MONGODB_URI,
+  SENDGRID_API_KEY: process.env.SENDGRID_API_KEY,
+  WHATSAPP_TO_NUMBER: process.env.WHATSAPP_TO_NUMBER,
+  WHATSAPP_ACCESS_TOKEN: process.env.WHATSAPP_ACCESS_TOKEN,
+  WHATSAPP_PHONE_NUMBER_ID: process.env.WHATSAPP_PHONE_NUMBER_ID,
+};
+
+Object.entries(requiredEnvVars).forEach(([name, value]) => {
+  if (!value) {
+    throw new Error(`Environment variable ${name} is required but not set.`);
+  }
+});
+
+sgMail.setApiKey(process.env.SENDGRID_API_KEY as string);
+
+// Connection options
+const options = {
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+  family: 4, // Use IPv4, skip trying IPv6
+  maxPoolSize: 10,
+};
+
+// Create the connection with retry logic
+let retryCount = 0;
+const maxRetries = 3;
+
+async function createConnection() {
+  try {
+    const conn = mongoose.createConnection(process.env.MONGODB_URI as string, options);
+    
+    // Connection event handlers
+    conn.on('connected', () => {
+      console.log('=== MongoDB Connection Details ===');
+      console.log(`Connected to host: ${conn.host}`);
+      console.log(`Database name: ${conn.name}`);
+      retryCount = 0; // Reset retry count on successful connection
+      
+      // Verify we're connected to the correct database
+      if (conn.name !== 'softballrsvp') {
+        console.warn(`Warning: Connected to database "${conn.name}" instead of "softballrsvp". Please check your MONGODB_URI.`);
+      }
+
+      // Log collection details after a short delay to ensure model is registered
+      setTimeout(() => {
+        const collections = Object.keys(conn.models);
+        console.log('\n=== Collection Details ===');
+        console.log('Registered collections:', collections);
+        console.log('RSVP collection name:', conn.models.RSVP?.collection.name);
+        console.log('===============================\n');
+      }, 1000);
+    });
+
+    conn.on('error', async (error) => {
+      console.error('MongoDB connection error:', error);
+      
+      if (retryCount < maxRetries) {
+        retryCount++;
+        console.log(`Retrying connection... Attempt ${retryCount} of ${maxRetries}`);
+        await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds before retrying
+        return createConnection();
+      } else {
+        console.error('Max retry attempts reached. Exiting...');
+        process.exit(1);
+      }
+    });
+
+    conn.on('disconnected', () => {
+      console.log('MongoDB disconnected');
+    });
+
+    return conn;
+  } catch (error) {
+    console.error('Error creating MongoDB connection:', error);
+    throw error;
+  }
 }
 
-if (!process.env.SENDGRID_API_KEY) {
-  throw new Error('Please add your SendGrid API key to .env.local');
-}
+// Create the initial connection
+const connection = await createConnection();
 
-// Validate WhatsApp environment variables
-if (!process.env.WHATSAPP_TO_NUMBER || !process.env.WHATSAPP_ACCESS_TOKEN || !process.env.WHATSAPP_PHONE_NUMBER_ID) {
-  throw new Error('Please add WhatsApp configuration to .env.local (WHATSAPP_TO_NUMBER, WHATSAPP_ACCESS_TOKEN, WHATSAPP_PHONE_NUMBER_ID)');
-}
-
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
-// Create the connection
-const connection = mongoose.createConnection(process.env.MONGODB_URI as string);
+// Handle graceful shutdown
+process.on('SIGINT', async () => {
+  await connection.close();
+  console.log('MongoDB connection closed through app termination');
+  process.exit(0);
+});
 
 // Function to send Wednesday WhatsApp message
 export async function sendWednesdayReminder() {
@@ -149,43 +221,6 @@ schedule('0 12 * * 6', sendSaturdayReminder, {
   timezone: "America/New_York"
 });
 
-// Handle connection events
-connection.on('connected', () => {
-  console.log('=== MongoDB Connection Details ===');
-  console.log(`Connected to host: ${connection.host}`);
-  console.log(`Database name: ${connection.name}`);
-  
-  // Verify we're connected to the correct database
-  if (connection.name !== 'softballrsvp') {
-    console.warn(`Warning: Connected to database "${connection.name}" instead of "softballrsvp". Please check your MONGODB_URI.`);
-  }
-
-  // Log collection details after a short delay to ensure model is registered
-  setTimeout(() => {
-    const collections = Object.keys(connection.models);
-    console.log('\n=== Collection Details ===');
-    console.log('Registered collections:', collections);
-    console.log('RSVP collection name:', connection.models.RSVP.collection.name);
-    console.log('===============================\n');
-  }, 1000);
-});
-
-connection.on('error', (error) => {
-  console.error('MongoDB connection error:', error);
-  process.exit(1);
-});
-
-connection.on('disconnected', () => {
-  console.log('MongoDB disconnected');
-});
-
-// Handle graceful shutdown
-process.on('SIGINT', async () => {
-  await connection.close();
-  console.log('MongoDB connection closed through app termination');
-  process.exit(0);
-});
-
 // RSVP Schema
 const rsvpSchema = new mongoose.Schema({
   playerName: {
@@ -212,4 +247,11 @@ const rsvpSchema = new mongoose.Schema({
 export const RSVP = connection.model('RSVP', rsvpSchema);
 
 // Export the connection for use in other parts of the application
-export const connectDB = async () => connection; 
+export const connectDB = async () => {
+  if (connection.readyState !== 1) {
+    // If not connected (0) or disconnected (3), try to reconnect
+    console.log('MongoDB not connected, attempting to reconnect...');
+    return createConnection();
+  }
+  return connection;
+}; 

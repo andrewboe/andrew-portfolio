@@ -11,8 +11,12 @@
   "dependencies": {
     "@fontsource/press-start-2p": "^5.2.6",
     "@sendgrid/mail": "^8.1.5",
+    "@types/node-cron": "^3.0.11",
     "framer-motion": "^12.23.3",
+    "mongodb": "^6.17.0",
+    "mongoose": "^8.16.3",
     "next": "15.3.5",
+    "node-cron": "^4.2.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

@@ -116,14 +116,16 @@ function ExpandedProjectCard({
 					{isEven ? (
 						<>
 							<div className="flex-shrink-0 w-full sm:w-64 flex items-center justify-center">
-								<motion.img
-									layout
-									src={proj.img}
-									alt={proj.title + " screenshot"}
-									className={`rounded border-2 border-primary/30 bg-background shadow-pixel border-pixel object-contain w-full max-w-[256px]`}
-									style={{ width: "100%", height: "auto", imageRendering: "pixelated", background: "#222" }}
-									transition={{ duration: ANIMATION_DURATION, type: "tween", ease: "easeInOut" }}
-								/>
+								<div className="w-full aspect-[4/3] relative flex items-center justify-center bg-black/20 border-2 border-primary/30 rounded shadow-pixel">
+									<motion.img
+										layout
+										src={proj.img}
+										alt={proj.title + " screenshot"}
+										className="absolute inset-0 w-full h-full object-contain p-2"
+										style={{ imageRendering: "pixelated" }}
+										transition={{ duration: ANIMATION_DURATION, type: "tween", ease: "easeInOut" }}
+									/>
+								</div>
 							</div>
 							<div className="flex-1 flex flex-col justify-center min-w-0">
 								<motion.h3 layout className="text-lg font-bold mb-4" transition={{ duration: ANIMATION_DURATION }}>
@@ -147,14 +149,16 @@ function ExpandedProjectCard({
 								<ProjectLinks proj={proj} isClosing={isClosing} />
 							</div>
 							<div className="flex-shrink-0 w-full sm:w-64 flex items-center justify-center">
-								<motion.img
-									layout
-									src={proj.img}
-									alt={proj.title + " screenshot"}
-									className={`rounded border-2 border-primary/30 bg-background shadow-pixel border-pixel object-contain w-full max-w-[256px]`}
-									style={{ width: "100%", height: "auto", imageRendering: "pixelated", background: "#222" }}
-									transition={{ duration: ANIMATION_DURATION, type: "tween", ease: "easeInOut" }}
-								/>
+								<div className="w-full aspect-[4/3] relative flex items-center justify-center bg-black/20 border-2 border-primary/30 rounded shadow-pixel">
+									<motion.img
+										layout
+										src={proj.img}
+										alt={proj.title + " screenshot"}
+										className="absolute inset-0 w-full h-full object-contain p-2"
+										style={{ imageRendering: "pixelated" }}
+										transition={{ duration: ANIMATION_DURATION, type: "tween", ease: "easeInOut" }}
+									/>
+								</div>
 							</div>
 						</>
 					)}

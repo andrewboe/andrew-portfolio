@@ -190,11 +190,11 @@ export default function AboutSection() {
           </a>
         </div>
         {/* Right: Skills & Tools */}
-        <div className="flex-1 flex flex-col items-center w-full">
-          <div className="flex flex-col items-center mx-auto" style={{ width: 3 * 200 + 2 * 64 }}>
+        <div className="flex-1 flex flex-col items-center w-full max-w-[1200px] px-4">
+          <div className="flex flex-col items-center w-full">
             <h3 className="text-xl font-semibold mb-8 text-center w-full">Skills & Tools</h3>
-            <div className="grid grid-cols-3 gap-x-16 gap-y-8">
-              {/* 3x3 grid of large skill logos with labels below, each in a bordered card with pixel-art CSS shading */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+              {/* Responsive grid of skill logos with labels below */}
               {[
                 { src: "/javascript.png", alt: "JavaScript", label: "JavaScript" },
                 { src: "/typescript.png", alt: "TypeScript", label: "TypeScript" },
@@ -208,7 +208,7 @@ export default function AboutSection() {
               ].map(({ src, alt, label }, i) => (
                 <div
                   key={alt}
-                  className="relative flex flex-col items-center border-2 border-primary/30 bg-background/80 p-4 shadow-pixel w-[200px] h-[140px] rounded-none overflow-hidden border-pixel"
+                  className="relative flex flex-col items-center border-2 border-primary/30 bg-background/80 p-4 shadow-pixel rounded-none overflow-hidden border-pixel w-full h-[140px]"
                   style={{
                     boxSizing: 'border-box',
                     boxShadow: `4px 4px 0 0 #222, 8px 8px 0 0 #000, 0 0 0 4px #fff inset`,

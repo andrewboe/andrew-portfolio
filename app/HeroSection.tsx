@@ -165,10 +165,10 @@ export default function HeroSection() {
           <p ref={descRef} className="text-base sm:text-lg max-w-md text-muted-foreground mb-4 slide-left text-center sm:text-left">
             Hi! I'm Andrew, a passionate developer focused on building impactful digital experiences.
           </p>
-          <div ref={linksRef} className="flex gap-6 mb-4 slide-right">
+          <div ref={linksRef} className="flex flex-wrap justify-center sm:justify-start gap-4 mb-4 slide-right w-full">
             <a
               href="mailto:andrewboe63@gmail.com"
-              className="hover:underline text-primary border-2 border-primary px-2 py-1 bg-background/80 shadow-pixel border-pixel"
+              className="hover:underline text-primary border-2 border-primary px-4 py-2 bg-background/80 shadow-pixel border-pixel min-w-[100px] text-center"
             >
               Email
             </a>
@@ -176,7 +176,7 @@ export default function HeroSection() {
               href="https://github.com/andrewboe"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:underline text-primary border-2 border-primary px-2 py-1 bg-background/80 shadow-pixel border-pixel"
+              className="hover:underline text-primary border-2 border-primary px-4 py-2 bg-background/80 shadow-pixel border-pixel min-w-[100px] text-center"
             >
               GitHub
             </a>
@@ -184,7 +184,7 @@ export default function HeroSection() {
               href="https://www.linkedin.com/in/andrew-boe-074770142/"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:underline text-primary border-2 border-primary px-2 py-1 bg-background/80 shadow-pixel border-pixel"
+              className="hover:underline text-primary border-2 border-primary px-4 py-2 bg-background/80 shadow-pixel border-pixel min-w-[100px] text-center"
             >
               LinkedIn
             </a>

@@ -1,5 +1,5 @@
 import { Redis } from '@upstash/redis';
-import { AuthenticationState, AuthenticationCreds, SignalDataTypeMap } from '@whiskeysockets/baileys';
+import { AuthenticationState, AuthenticationCreds, SignalDataTypeMap, initAuthCreds } from '@whiskeysockets/baileys';
 import { proto } from '@whiskeysockets/baileys';
 
 // Initialize Redis client
@@ -86,7 +86,7 @@ export async function useRedisAuthState(): Promise<{
   const redis = getRedisClient();
   
   // Load existing auth state from Redis
-  let creds: AuthenticationCreds | undefined = undefined;
+  let creds: AuthenticationCreds;
   let keys: any = {};
   
   try {
@@ -95,6 +95,10 @@ export async function useRedisAuthState(): Promise<{
     if (storedCreds) {
       creds = deserializeWithUint8Arrays(storedCreds) as AuthenticationCreds;
       console.log('✅ Loaded existing auth credentials from Redis');
+    } else {
+      // Create initial empty credentials for new auth session using Baileys' official function
+      creds = initAuthCreds();
+      console.log('🔄 Created initial auth credentials for new session');
     }
     
     // Load keys

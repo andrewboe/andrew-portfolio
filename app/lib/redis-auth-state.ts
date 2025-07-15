@@ -85,20 +85,18 @@ export async function useRedisAuthState(): Promise<{
 }> {
   const redis = getRedisClient();
   
-  // Load existing auth state from Redis
-  let creds: AuthenticationCreds;
+  // Initialize with default credentials first (ensures creds is always assigned)
+  let creds: AuthenticationCreds = initAuthCreds();
   let keys: any = {};
   
   try {
-    // Load credentials
+    // Try to load existing credentials from Redis
     const storedCreds = await redis.get(REDIS_KEYS.CREDS);
     if (storedCreds) {
       creds = deserializeWithUint8Arrays(storedCreds) as AuthenticationCreds;
       console.log('✅ Loaded existing auth credentials from Redis');
     } else {
-      // Create initial empty credentials for new auth session using Baileys' official function
-      creds = initAuthCreds();
-      console.log('🔄 Created initial auth credentials for new session');
+      console.log('🔄 Using initial auth credentials for new session');
     }
     
     // Load keys

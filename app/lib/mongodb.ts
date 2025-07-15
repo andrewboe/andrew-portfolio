@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import { schedule } from 'node-cron';
 import sgMail from '@sendgrid/mail';
 
 // Validate required environment variables
@@ -204,22 +203,6 @@ export async function resetRSVPs() {
     return { success: false, error };
   }
 }
-
-// Schedule weekly reset - Runs at 12:00 AM every Monday
-schedule('0 0 * * 1', resetRSVPs, {
-  timezone: "America/New_York"
-});
-
-// Schedule WhatsApp reminders
-// Wednesday at 12:00 PM (noon)
-schedule('0 12 * * 3', sendWednesdayReminder, {
-  timezone: "America/New_York"
-});
-
-// Saturday at 12:00 PM (noon)
-schedule('0 12 * * 6', sendSaturdayReminder, {
-  timezone: "America/New_York"
-});
 
 // RSVP Schema
 const rsvpSchema = new mongoose.Schema({

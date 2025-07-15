@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/softball/reset",
+      "schedule": "0 0 * * 1"
+    },
+    {
+      "path": "/api/cron/softball/wednesday",
+      "schedule": "0 12 * * 3"
+    },
+    {
+      "path": "/api/cron/softball/saturday",
+      "schedule": "0 12 * * 6"
+    }
+  ]
+} 

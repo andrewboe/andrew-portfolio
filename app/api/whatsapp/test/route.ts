@@ -1,61 +1,49 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { sendWednesdayReminder, sendSaturdayReminder } from '@/app/lib/mongodb';
+import { NextResponse } from 'next/server';
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   try {
-    // Check for secret token to prevent unauthorized tests
-    const authorization = req.headers.get('authorization');
-    const expectedToken = process.env.RESET_SECRET; // We'll reuse the reset secret for simplicity
+    // Test message
+    const testMessage = "🧪 Test message from your softball RSVP app! This is working correctly.";
+    
+    const response = await fetch('https://gate.whapi.cloud/messages/text', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.WHAPI_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        to: process.env.WHATSAPP_GROUP_ID,
+        body: testMessage
+      })
+    });
 
-    if (!expectedToken) {
+    const responseData = await response.json();
+    console.log('Whapi.cloud test response:', responseData);
+
+    if (!response.ok) {
       return NextResponse.json(
-        { error: 'Server configuration error: RESET_SECRET not set' },
-        { status: 500 }
+        { 
+          success: false, 
+          error: `Whapi.cloud API Error (${response.status})`,
+          details: responseData
+        },
+        { status: response.status }
       );
-    }
-
-    if (!authorization) {
-      return NextResponse.json(
-        { error: 'Authorization header is required' },
-        { status: 401 }
-      );
-    }
-
-    if (authorization !== `Bearer ${expectedToken}`) {
-      return NextResponse.json(
-        { error: 'Invalid authorization token' },
-        { status: 401 }
-      );
-    }
-
-    // Get the message type from the request body
-    const { messageType } = await req.json();
-
-    if (!messageType || !['wednesday', 'saturday'].includes(messageType)) {
-      return NextResponse.json(
-        { error: 'Invalid message type. Must be "wednesday" or "saturday"' },
-        { status: 400 }
-      );
-    }
-
-    // Send the appropriate message
-    let result;
-    if (messageType === 'wednesday') {
-      result = await sendWednesdayReminder();
-    } else {
-      result = await sendSaturdayReminder();
     }
 
     return NextResponse.json({
       success: true,
-      message: `${messageType === 'wednesday' ? 'Wednesday' : 'Saturday'} WhatsApp message sent successfully`,
-      apiResponse: result.response
+      message: 'Test message sent successfully',
+      response: responseData
     });
-  } catch (error: unknown) {
-    console.error('Error in WhatsApp test endpoint:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Failed to send WhatsApp message';
+  } catch (error) {
+    console.error('Error testing Whapi.cloud integration:', error);
     return NextResponse.json(
-      { error: errorMessage },
+      { 
+        success: false, 
+        error: 'Failed to send test message',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }

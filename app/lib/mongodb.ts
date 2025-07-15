@@ -5,9 +5,8 @@ import sgMail from '@sendgrid/mail';
 const requiredEnvVars = {
   MONGODB_URI: process.env.MONGODB_URI,
   SENDGRID_API_KEY: process.env.SENDGRID_API_KEY,
-  WHATSAPP_TO_NUMBER: process.env.WHATSAPP_TO_NUMBER,
-  WHATSAPP_ACCESS_TOKEN: process.env.WHATSAPP_ACCESS_TOKEN,
-  WHATSAPP_PHONE_NUMBER_ID: process.env.WHATSAPP_PHONE_NUMBER_ID,
+  WHAPI_TOKEN: process.env.WHAPI_TOKEN,
+  WHATSAPP_GROUP_ID: process.env.WHATSAPP_GROUP_ID,
 };
 
 Object.entries(requiredEnvVars).forEach(([name, value]) => {
@@ -91,74 +90,61 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
-// Function to send Wednesday WhatsApp message
-export async function sendWednesdayReminder() {
+// Function to send WhatsApp group message using Whapi.cloud
+async function sendWhapiGroupMessage(message: string) {
   try {
-    const rsvpLink = `${process.env.NEXT_PUBLIC_APP_URL}/softball`;
-    const message = `Time to RSVP for softball!\n\nClick here to let us know if you're coming: ${rsvpLink}`;
-
-    console.log('Attempting to send Wednesday WhatsApp message to:', process.env.WHATSAPP_TO_NUMBER);
-    
-    const response = await fetch(`https://graph.facebook.com/v19.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`, {
+    const response = await fetch('https://gate.whapi.cloud/messages/text', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
+        'Authorization': `Bearer ${process.env.WHAPI_TOKEN}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to: process.env.WHATSAPP_TO_NUMBER,
-        type: 'text',
-        text: { body: message }
+        to: process.env.WHATSAPP_GROUP_ID,
+        body: message
       })
     });
 
     const responseData = await response.json();
-    console.log('WhatsApp API Response:', responseData);
+    console.log('Whapi.cloud API Response:', responseData);
 
     if (!response.ok) {
-      throw new Error(`WhatsApp API Error (${response.status}): ${JSON.stringify(responseData)}`);
+      throw new Error(`Whapi.cloud API Error (${response.status}): ${JSON.stringify(responseData)}`);
     }
 
-    console.log('Wednesday WhatsApp reminder sent successfully');
     return { success: true, response: responseData };
+  } catch (error) {
+    console.error('Error sending WhatsApp group message via Whapi.cloud:', error);
+    throw error;
+  }
+}
+
+// Function to send Wednesday reminder
+export async function sendWednesdayReminder() {
+  try {
+    const rsvpLink = `${process.env.NEXT_PUBLIC_APP_URL}/softball`;
+    const message = `⚾ Time to RSVP for softball! ⚾\n\nClick here to let us know if you're coming: ${rsvpLink}`;
+
+    console.log('Attempting to send Wednesday WhatsApp group message via Whapi.cloud');
+    const result = await sendWhapiGroupMessage(message);
+    console.log('Wednesday WhatsApp reminder sent successfully:', result);
+    return { success: true, response: result };
   } catch (error) {
     console.error('Error sending Wednesday WhatsApp reminder:', error);
     throw error;
   }
 }
 
-// Function to send Saturday WhatsApp message
+// Function to send Saturday reminder
 export async function sendSaturdayReminder() {
   try {
     const rsvpLink = `${process.env.NEXT_PUBLIC_APP_URL}/softball`;
-    const message = `Softball is tomorrow! Please RSVP if you haven't already!\n\nClick here to let us know if you're coming: ${rsvpLink}`;
+    const message = `🥎 Softball is tomorrow! Please RSVP if you haven't already! 🥎\n\nClick here to let us know if you're coming: ${rsvpLink}`;
 
-    console.log('Attempting to send Saturday WhatsApp message to:', process.env.WHATSAPP_TO_NUMBER);
-    
-    const response = await fetch(`https://graph.facebook.com/v19.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to: process.env.WHATSAPP_TO_NUMBER,
-        type: 'text',
-        text: { body: message }
-      })
-    });
-
-    const responseData = await response.json();
-    console.log('WhatsApp API Response:', responseData);
-
-    if (!response.ok) {
-      throw new Error(`WhatsApp API Error (${response.status}): ${JSON.stringify(responseData)}`);
-    }
-
-    console.log('Saturday WhatsApp reminder sent successfully');
-    return { success: true, response: responseData };
+    console.log('Attempting to send Saturday WhatsApp group message via Whapi.cloud');
+    const result = await sendWhapiGroupMessage(message);
+    console.log('Saturday WhatsApp reminder sent successfully:', result);
+    return { success: true, response: result };
   } catch (error) {
     console.error('Error sending Saturday WhatsApp reminder:', error);
     throw error;

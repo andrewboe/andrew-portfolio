@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
-import { connectDB, RSVP } from '@/app/lib/mongodb';
+import { RSVP } from '@/app/lib/mongodb';
 
 export async function POST(req: Request) {
   try {
-    await connectDB();
     const body = await req.json();
     const rsvp = await RSVP.create(body);
     return NextResponse.json(rsvp, { status: 201 });
@@ -17,7 +16,6 @@ export async function POST(req: Request) {
 
 export async function GET() {
   try {
-    await connectDB();
     const rsvps = await RSVP.find().sort({ createdAt: -1 });
     return NextResponse.json(rsvps);
   } catch (error) {

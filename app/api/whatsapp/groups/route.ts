@@ -1,50 +1,23 @@
 import { NextResponse } from 'next/server';
+import { getWhatsAppGroups } from '../../../lib/mongodb';
 
 export async function GET() {
   try {
-    const response = await fetch('https://gate.whapi.cloud/groups', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${process.env.WHAPI_TOKEN}`,
-        'Content-Type': 'application/json',
-      }
-    });
-
-    const responseData = await response.json();
-    console.log('Whapi.cloud groups response:', responseData);
-
-    if (!response.ok) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: `Whapi.cloud API Error (${response.status})`,
-          details: responseData
-        },
-        { status: response.status }
-      );
-    }
-
-    // Format the response to be more readable
-    const groups = responseData.groups || responseData;
-    const formattedGroups = Array.isArray(groups) ? groups.map((group: any) => ({
-      id: group.id,
-      name: group.name || group.subject,
-      description: group.description || group.desc,
-      participantCount: group.size || group.participants?.length || 0,
-      isOwner: group.owner || false
-    })) : [];
-
+    console.log('Fetching WhatsApp groups via Baileys...');
+    
+    const result = await getWhatsAppGroups();
+    
     return NextResponse.json({
       success: true,
-      groups: formattedGroups,
-      raw: responseData // Include raw response for debugging
+      groups: result.groups,
+      message: 'Groups fetched successfully via Baileys'
     });
   } catch (error) {
-    console.error('Error fetching groups from Whapi.cloud:', error);
+    console.error('Error fetching groups from Baileys:', error);
     return NextResponse.json(
       { 
         success: false, 
-        error: 'Failed to fetch groups',
+        error: 'Failed to fetch groups via Baileys',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }

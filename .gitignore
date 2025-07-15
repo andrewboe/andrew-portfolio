@@ -40,3 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .github/instructions/CoPilot Dev Instructions.instructions.md
+
+# baileys auth (WhatsApp authentication files)
+baileys_auth_info/

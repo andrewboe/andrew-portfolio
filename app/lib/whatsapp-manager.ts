@@ -69,10 +69,11 @@ async function createWhatsAppConnection(): Promise<{ success: boolean; socket?: 
     const socket = makeWASocket({
       auth: state,
       browser: Browsers.ubuntu('WhatsApp Bot'),
-      connectTimeoutMs: 40000, // 40 seconds - allow proper time for handshake
-      defaultQueryTimeoutMs: 30000, // 30 seconds for queries
+      connectTimeoutMs: 60000, // 60 seconds - extended for full handshake
+      defaultQueryTimeoutMs: 45000, // 45 seconds for queries
       keepAliveIntervalMs: 30000, // 30 seconds
       qrTimeout: 300000, // 5 minutes for QR timeout
+      authTimeoutMs: 60000, // 60 seconds for authentication
       retryRequestDelayMs: 5000, // 5 seconds between retries
       maxMsgRetryCount: 3, // Limit retry attempts
       printQRInTerminal: false,
@@ -190,18 +191,34 @@ async function createWhatsAppConnection(): Promise<{ success: boolean; socket?: 
       }
     });
 
-    // Enhanced credential update handler
+    // Enhanced credential update handler with retry logic
     socket.ev.on('creds.update', async () => {
       console.log(`⏱️  [${Date.now() - startTime}ms] Credentials updated - saving to Redis...`);
       await logConnectionEvent('creds_update_start');
       
-      try {
-        await saveCreds();
-        console.log(`⏱️  [${Date.now() - startTime}ms] Credentials saved successfully`);
-        await logConnectionEvent('creds_saved');
-      } catch (error) {
-        console.error(`⏱️  [${Date.now() - startTime}ms] Failed to save credentials:`, error);
-        await logConnectionEvent('creds_save_failed', { error: (error as Error).message });
+      // Retry logic for credential saving (critical for handshake success)
+      let retryCount = 0;
+      const maxRetries = 3;
+      
+      while (retryCount < maxRetries) {
+        try {
+          await saveCreds();
+          console.log(`⏱️  [${Date.now() - startTime}ms] Credentials saved successfully (attempt ${retryCount + 1})`);
+          await logConnectionEvent('creds_saved', { attempt: retryCount + 1 });
+          break; // Success - exit retry loop
+        } catch (error) {
+          retryCount++;
+          console.error(`⏱️  [${Date.now() - startTime}ms] Failed to save credentials (attempt ${retryCount}/${maxRetries}):`, error);
+          
+          if (retryCount >= maxRetries) {
+            console.error(`⏱️  [${Date.now() - startTime}ms] CRITICAL: All credential save attempts failed!`);
+            await logConnectionEvent('creds_save_failed_final', { error: (error as Error).message });
+            // This could cause "Couldn't link Device" error
+          } else {
+            // Wait briefly before retry
+            await new Promise(resolve => setTimeout(resolve, 100 * retryCount));
+          }
+        }
       }
     });
 

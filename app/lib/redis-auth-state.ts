@@ -4,11 +4,11 @@ import { proto } from '@whiskeysockets/baileys';
 
 // Initialize Redis client
 function getRedisClient(): Redis {
-  const redisUrl = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
-  const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+  const redisUrl = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || process.env.KV_KV_REST_API_URL;
+  const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN || process.env.KV_KV_REST_API_TOKEN;
   
   if (!redisUrl || !redisToken) {
-    throw new Error('Redis environment variables not found. Need UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN');
+    throw new Error('Redis environment variables not found. Need one of: UPSTASH_REDIS_REST_URL/KV_REST_API_URL/KV_KV_REST_API_URL and corresponding TOKEN');
   }
   
   return new Redis({

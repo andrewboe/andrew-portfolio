@@ -51,7 +51,7 @@ async function logConnectionEvent(event: string, data?: any): Promise<void> {
     await redis.set('whatsapp:connection_logs', logs, { ex: 3600 }); // 1 hour expiry
   } catch (error) {
     // Silent failure - don't break the connection process if logging fails
-    console.warn('⚠️ Logging failed (non-critical):', error.message);
+    console.warn('⚠️ Logging failed (non-critical):', error instanceof Error ? error.message : String(error));
   }
 }
 

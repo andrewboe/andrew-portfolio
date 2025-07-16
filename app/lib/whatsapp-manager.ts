@@ -69,8 +69,8 @@ async function createWhatsAppConnection(): Promise<{ success: boolean; socket?: 
     const socket = makeWASocket({
       auth: state,
       browser: Browsers.ubuntu('WhatsApp Bot'),
-      connectTimeoutMs: 20000, // 20 seconds (matches working debug endpoint)
-      defaultQueryTimeoutMs: 20000, // 20 seconds for queries
+      connectTimeoutMs: 40000, // 40 seconds - allow proper time for handshake
+      defaultQueryTimeoutMs: 30000, // 30 seconds for queries
       keepAliveIntervalMs: 30000, // 30 seconds
       qrTimeout: 300000, // 5 minutes for QR timeout
       retryRequestDelayMs: 5000, // 5 seconds between retries
@@ -375,6 +375,15 @@ export async function getQRForAuth(): Promise<{success: boolean; qr?: string; er
     await logConnectionEvent('qr_error', { error: (error as Error).message });
     return { success: false, error: (error as Error).message };
   }
+}
+
+// Clear global connection state (for debugging/reset)
+export async function clearGlobalConnection(): Promise<void> {
+  console.log('🧹 Clearing global connection state...');
+  globalSocket = null;
+  globalConnectionPromise = null;
+  lastConnectionTime = 0;
+  console.log('✅ Global connection state cleared');
 }
 
 // Clear all authentication data

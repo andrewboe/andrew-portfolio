@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import makeWASocket, { Browsers } from '@whiskeysockets/baileys';
 import { useRedisAuthState, storeQRCode, getStoredQRCode } from '../../lib/redis-auth-state';
 
+export const runtime = 'nodejs';
+
 export async function GET(request: NextRequest) {
   const logs: string[] = [];
   const addLog = (message: string) => {

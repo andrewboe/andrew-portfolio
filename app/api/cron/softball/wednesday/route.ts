@@ -1,6 +1,8 @@
 import { sendWednesdayReminder } from '@/app/lib/mongodb';
 import { NextResponse } from 'next/server';
 
+export const runtime = 'nodejs';
+
 export async function GET() {
   try {
     const result = await sendWednesdayReminder();

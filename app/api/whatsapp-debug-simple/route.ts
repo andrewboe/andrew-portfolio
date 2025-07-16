@@ -7,6 +7,8 @@ import {
   clearAllAuthDataSimple 
 } from '../../lib/redis-auth-state-simple';
 
+export const runtime = 'nodejs';
+
 export async function GET(request: NextRequest) {
   const logs: string[] = [];
   const addLog = (message: string) => {

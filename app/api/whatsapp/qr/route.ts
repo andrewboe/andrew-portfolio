@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getQRCode } from '../../../lib/mongodb';
 
+export const runtime = 'nodejs';
+
 export async function GET() {
   try {
     console.log('Fetching WhatsApp QR code...');

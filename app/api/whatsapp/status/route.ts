@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getConnectionStatus } from '../../../lib/mongodb';
 
+export const runtime = 'nodejs';
+
 export async function GET() {
   try {
     console.log('Checking WhatsApp connection status...');

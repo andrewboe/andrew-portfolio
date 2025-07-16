@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { sendTestMessage } from '../../../lib/mongodb';
 
+export const runtime = 'nodejs';
+
 export async function POST() {
   try {
     console.log('Testing WhatsApp message via Baileys...');

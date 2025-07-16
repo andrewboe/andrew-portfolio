@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { clearAllAuthData } from '../../lib/redis-auth-state';
 
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   try {
     console.log('🧹 Clearing all WhatsApp auth data...');

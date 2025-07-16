@@ -110,7 +110,7 @@ export async function GET() {
       };
       
       // Monitor connection for 20 seconds
-      const connectionPromise = new Promise((resolve) => {
+      const connectionPromise = new Promise<DebugResult>((resolve) => {
         const timeout = setTimeout(() => {
           socket.end(new Error('Debug timeout'));
           debugResult.finalState = 'timeout';

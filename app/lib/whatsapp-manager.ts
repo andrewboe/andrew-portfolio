@@ -58,10 +58,13 @@ async function logConnectionEvent(event: string, data?: any): Promise<void> {
 // Create WhatsApp socket connection with enhanced logging
 async function createWhatsAppConnection(): Promise<{ success: boolean; socket?: WASocket; error?: string }> {
   try {
+    const startTime = Date.now();
     console.log('🔄 Creating new WhatsApp connection...');
     await logConnectionEvent('connection_attempt_start');
     
+    console.log(`⏱️  [${Date.now() - startTime}ms] Step 1: Getting auth state...`);
     const { state, saveCreds } = await useRedisAuthState();
+    console.log(`⏱️  [${Date.now() - startTime}ms] Step 2: Auth state loaded, creating socket...`);
     
     const socket = makeWASocket({
       auth: state,
@@ -81,27 +84,31 @@ async function createWhatsAppConnection(): Promise<{ success: boolean; socket?: 
       generateHighQualityLinkPreview: false, // Disable to reduce processing
     });
     
+    console.log(`⏱️  [${Date.now() - startTime}ms] Step 3: Socket created, setting up event handlers...`);
+    
     // Enhanced connection event handler with detailed logging
     socket.ev.on('connection.update', async (update) => {
       try {
+        console.log(`⏱️  [${Date.now() - startTime}ms] Connection update event: ${JSON.stringify(update.connection)}`);
         await logConnectionEvent('connection_update', update);
         
         const { connection, lastDisconnect, qr, receivedPendingNotifications } = update;
         
         if (qr) {
-          console.log('🔄 QR Code received');
+          console.log(`⏱️  [${Date.now() - startTime}ms] QR Code received - storing...`);
           await logConnectionEvent('qr_generated');
           await storeQRCode(qr);
           await logConnectionEvent('qr_stored');
+          console.log(`⏱️  [${Date.now() - startTime}ms] QR Code stored successfully`);
         }
         
         if (connection === 'connecting') {
-          console.log('⏳ Connecting to WhatsApp...');
+          console.log(`⏱️  [${Date.now() - startTime}ms] Status: Connecting to WhatsApp...`);
           await logConnectionEvent('connection_connecting');
         }
         
         if (connection === 'open') {
-          console.log('✅ WhatsApp connected successfully');
+          console.log(`⏱️  [${Date.now() - startTime}ms] SUCCESS: WhatsApp connected!`);
           await logConnectionEvent('connection_open');
           
           // Clear any existing QR code
@@ -185,20 +192,22 @@ async function createWhatsAppConnection(): Promise<{ success: boolean; socket?: 
 
     // Enhanced credential update handler
     socket.ev.on('creds.update', async () => {
-      console.log('🔐 Credentials updated, saving to Redis...');
+      console.log(`⏱️  [${Date.now() - startTime}ms] Credentials updated - saving to Redis...`);
       await logConnectionEvent('creds_update_start');
       
       try {
         await saveCreds();
-        console.log('✅ Credentials saved successfully');
+        console.log(`⏱️  [${Date.now() - startTime}ms] Credentials saved successfully`);
         await logConnectionEvent('creds_saved');
       } catch (error) {
-        console.error('❌ Failed to save credentials:', error);
+        console.error(`⏱️  [${Date.now() - startTime}ms] Failed to save credentials:`, error);
         await logConnectionEvent('creds_save_failed', { error: (error as Error).message });
       }
     });
 
+    console.log(`⏱️  [${Date.now() - startTime}ms] Step 4: Event handlers set up, socket creation complete`);
     await logConnectionEvent('socket_created');
+    console.log(`⏱️  [${Date.now() - startTime}ms] FINAL: Returning socket to caller`);
     return { success: true, socket };
   } catch (error) {
     console.error('❌ Error creating WhatsApp connection:', error);
@@ -228,13 +237,20 @@ export async function getWhatsAppConnection(): Promise<WASocket> {
     }
   }
 
-  // Create new connection with serverless timeout protection
+  // Create new connection with detailed timing and timeout protection  
+  const mainStartTime = Date.now();
+  console.log('🚨 [MAIN] Starting connection with detailed timing...');
+  
   globalConnectionPromise = Promise.race([
     (async () => {
+      console.log(`⏱️  [MAIN: ${Date.now() - mainStartTime}ms] Calling createWhatsAppConnection...`);
       const result = await createWhatsAppConnection();
+      console.log(`⏱️  [MAIN: ${Date.now() - mainStartTime}ms] createWhatsAppConnection returned:`, result.success ? 'SUCCESS' : 'FAILED');
+      
       if (result.success && result.socket) {
         globalSocket = result.socket;
         lastConnectionTime = Date.now();
+        console.log(`⏱️  [MAIN: ${Date.now() - mainStartTime}ms] Socket stored globally - MAIN CONNECTION COMPLETE!`);
         return result.socket;
       } else {
         throw new Error(result.error || 'Failed to create connection');
@@ -242,14 +258,19 @@ export async function getWhatsAppConnection(): Promise<WASocket> {
     })(),
     new Promise<never>((_, reject) => {
       setTimeout(() => {
-        reject(new Error('Connection attempt timed out after 25 seconds (serverless limit)'));
-      }, 25000); // 25 second hard limit to prevent Vercel timeout
+        console.log(`🚨 [MAIN: ${Date.now() - mainStartTime}ms] TIMEOUT TRIGGERED - 15 seconds reached`);
+        reject(new Error('TIMEOUT: Main connection timeout after 15 seconds (diagnostic mode)'));
+      }, 15000); // Shorter timeout for debugging
     })
   ]);
 
   try {
-    return await globalConnectionPromise;
+    console.log(`⏱️  [MAIN: ${Date.now() - mainStartTime}ms] Waiting for connection promise...`);
+    const socket = await globalConnectionPromise;
+    console.log(`⏱️  [MAIN: ${Date.now() - mainStartTime}ms] 🎉 FINAL SUCCESS - Socket ready for use!`);
+    return socket;
   } catch (error) {
+    console.log(`⏱️  [MAIN: ${Date.now() - mainStartTime}ms] ❌ FINAL ERROR:`, error);
     globalConnectionPromise = null;
     throw error;
   }

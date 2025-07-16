@@ -200,7 +200,7 @@ export async function sendMessage(groupId: string, message: string): Promise<{su
     console.log('✅ Message sent successfully');
     return { 
       success: true, 
-      messageId: result?.key?.id 
+      messageId: result?.key?.id || undefined 
     };
   } catch (error) {
     console.error('❌ Error sending message:', error);

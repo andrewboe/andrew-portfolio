@@ -78,6 +78,7 @@ export async function GET() {
     
     finalResult.finalState = finalState;
     finalResult.qrGenerated = !!qrCode;
+    finalResult.qrCode = qrCode; // Include QR for immediate scanning
     
     log('🏁 COMPREHENSIVE DEBUG COMPLETE');
     

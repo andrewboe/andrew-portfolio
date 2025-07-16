@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
         addLog(`✅ QR found after ${(attempt + 1) * 2} seconds`);
         
         // Clean up
-        socket.end();
+        socket.end(undefined);
         
         return NextResponse.json({
           success: true,
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Cleanup
-    socket.end();
+    socket.end(undefined);
     
     return NextResponse.json({
       success: false,

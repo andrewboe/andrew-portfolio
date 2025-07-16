@@ -66,96 +66,120 @@ async function createWhatsAppConnection(): Promise<{ success: boolean; socket?: 
     const socket = makeWASocket({
       auth: state,
       browser: Browsers.ubuntu('WhatsApp Bot'),
-      connectTimeoutMs: 60000, // 1 minute timeout
-      defaultQueryTimeoutMs: 60000,
+      connectTimeoutMs: 120000, // 2 minutes (increased from 60s for serverless)
+      defaultQueryTimeoutMs: 120000, // 2 minutes for queries
+      keepAliveIntervalMs: 30000, // 30 seconds
+      qrTimeout: 300000, // 5 minutes for QR timeout
+      retryRequestDelayMs: 5000, // 5 seconds between retries
+      maxMsgRetryCount: 3, // Limit retry attempts
       printQRInTerminal: false,
       syncFullHistory: false,
       markOnlineOnConnect: false,
-      // Removed version specification that might be causing issues
+      emitOwnEvents: false, // Don't emit events for our own actions
+      // Additional settings for serverless stability
+      fireInitQueries: true, // Ensure initialization queries are sent
+      generateHighQualityLinkPreview: false, // Disable to reduce processing
     });
     
     // Enhanced connection event handler with detailed logging
     socket.ev.on('connection.update', async (update) => {
-      const { connection, lastDisconnect, qr } = update;
-      
-      console.log(`📡 Connection update: ${connection}`);
-      await logConnectionEvent('connection_update', { 
-        connection, 
-        hasQR: !!qr,
-        disconnectReason: lastDisconnect?.error?.message,
-        disconnectCode: (lastDisconnect?.error as Boom)?.output?.statusCode
-      });
-
-      if (qr) {
-        console.log('📱 QR Code generated');
-        await logConnectionEvent('qr_generated');
-        try {
+      try {
+        await logConnectionEvent('connection_update', update);
+        
+        const { connection, lastDisconnect, qr, receivedPendingNotifications } = update;
+        
+        if (qr) {
+          console.log('🔄 QR Code received');
+          await logConnectionEvent('qr_generated');
           await storeQRCode(qr);
-          console.log('✅ QR stored successfully');
           await logConnectionEvent('qr_stored');
-        } catch (error) {
-          console.error('❌ Failed to store QR:', error);
-          await logConnectionEvent('qr_store_failed', { error: (error as Error).message });
-        }
-      }
-
-      if (connection === 'open') {
-        console.log('✅ WhatsApp connected successfully');
-        await logConnectionEvent('connection_open', { 
-          socketUser: socket.user?.id,
-          socketName: socket.user?.name 
-        });
-        
-        try {
-          await storeConnectionState({ 
-            isConnected: true, 
-            connectedAt: Date.now(),
-            socketId: socket.user?.id || 'unknown'
-          });
-          console.log('✅ Connection state saved to Redis');
-          await logConnectionEvent('connection_state_saved');
-        } catch (error) {
-          console.error('❌ Failed to save connection state:', error);
-          await logConnectionEvent('connection_state_save_failed', { error: (error as Error).message });
         }
         
-        // Clear QR code since we're connected
-        try {
+        if (connection === 'connecting') {
+          console.log('⏳ Connecting to WhatsApp...');
+          await logConnectionEvent('connection_connecting');
+        }
+        
+        if (connection === 'open') {
+          console.log('✅ WhatsApp connected successfully');
+          await logConnectionEvent('connection_open');
+          
+          // Clear any existing QR code
           await clearQRCode();
-          console.log('✅ QR code cleared');
-          await logConnectionEvent('qr_cleared');
-        } catch (error) {
-          console.error('❌ Failed to clear QR:', error);
-          await logConnectionEvent('qr_clear_failed', { error: (error as Error).message });
+          
+          // Store successful connection state
+          await storeConnectionState({
+            isConnected: true,
+            connectedAt: Date.now(),
+            timestamp: Date.now()
+          });
+          
+          globalSocket = socket;
+          lastConnectionTime = Date.now();
         }
         
-      } else if (connection === 'close') {
-        console.log('❌ WhatsApp connection closed');
-        
-        const shouldReconnect = (lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
-        const disconnectReason = lastDisconnect?.error?.message || 'unknown';
-        
-        await logConnectionEvent('connection_close', { 
-          shouldReconnect,
-          disconnectReason,
-          disconnectCode: (lastDisconnect?.error as Boom)?.output?.statusCode
+        if (connection === 'close') {
+          const reason = lastDisconnect?.error;
+          const statusCode = (reason as any)?.output?.statusCode;
+          
+          console.log(`❌ Connection closed. Status code: ${statusCode}`);
+          
+          // Handle different disconnect reasons
+          let shouldReconnect = false;
+          let disconnectReason = 'Unknown';
+          
+          if (statusCode === 405) {
+            // Disconnect code 405 - Connection Failure (common in serverless)
+            disconnectReason = 'Connection Failure (405) - Serverless timeout or network issue';
+            shouldReconnect = true; // We can try to reconnect for 405 errors
+            console.log('🔄 Code 405 detected - will retry with longer timeout');
+          } else if (statusCode === DisconnectReason.loggedOut) {
+            disconnectReason = 'Logged Out';
+            shouldReconnect = false;
+            console.log('🚪 Logged out - clearing auth data');
+            await clearAllAuthData();
+          } else if (statusCode === DisconnectReason.restartRequired) {
+            disconnectReason = 'Restart Required';
+            shouldReconnect = true;
+            console.log('🔄 Restart required');
+          } else if (statusCode === DisconnectReason.timedOut) {
+            disconnectReason = 'Timed Out';
+            shouldReconnect = true;
+            console.log('⏰ Connection timed out');
+          } else {
+            disconnectReason = `Unknown (${statusCode})`;
+            shouldReconnect = true; // Default to reconnect for unknown errors
+          }
+          
+          await logConnectionEvent('connection_close', {
+            shouldReconnect,
+            disconnectReason,
+            disconnectCode: statusCode
+          });
+          
+          // Store disconnection state
+          await storeConnectionState({
+            isConnected: false,
+            disconnectedAt: Date.now(),
+            disconnectReason,
+            timestamp: Date.now()
+          });
+          
+          // Clear global socket
+          globalSocket = null;
+          globalConnectionPromise = null;
+          
+          if (shouldReconnect) {
+            console.log(`🔄 Will attempt to reconnect after disconnect: ${disconnectReason}`);
+            // For serverless, we don't auto-reconnect here as the function will end
+            // Reconnection will happen on the next QR request
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error in connection.update handler:', error);
+        await logConnectionEvent('connection_update_error', { 
+          error: error instanceof Error ? error.message : String(error)
         });
-        
-        await storeConnectionState({ 
-          isConnected: false, 
-          disconnectedAt: Date.now(),
-          disconnectReason
-        });
-        
-        console.log('🔍 Should reconnect:', shouldReconnect);
-        console.log('🔍 Disconnect reason:', disconnectReason);
-        
-        // Reset global state
-        globalSocket = null;
-        globalConnectionPromise = null;
-      } else if (connection === 'connecting') {
-        console.log('🔄 WhatsApp connecting...');
-        await logConnectionEvent('connection_connecting');
       }
     });
 

@@ -73,7 +73,6 @@ async function createWhatsAppConnection(): Promise<{ success: boolean; socket?: 
       defaultQueryTimeoutMs: 45000, // 45 seconds for queries
       keepAliveIntervalMs: 30000, // 30 seconds
       qrTimeout: 300000, // 5 minutes for QR timeout
-      authTimeoutMs: 60000, // 60 seconds for authentication
       retryRequestDelayMs: 5000, // 5 seconds between retries
       maxMsgRetryCount: 3, // Limit retry attempts
       printQRInTerminal: false,

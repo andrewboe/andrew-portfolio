@@ -1,9 +1,41 @@
 import { NextResponse } from 'next/server';
-import makeWASocket, { Browsers, DisconnectReason } from '@whiskeysockets/baileys';
+import makeWASocket, { Browsers, DisconnectReason, WAConnectionState } from '@whiskeysockets/baileys';
 import { useRedisAuthState, getConnectionState, storeConnectionState } from '../../lib/redis-auth-state';
 import { Redis } from '@upstash/redis';
 
 export const runtime = 'nodejs';
+
+// Type definitions for debug events
+interface ConnectionUpdateEvent {
+  timestamp: number;
+  connection: WAConnectionState | undefined;
+  hasQR: boolean;
+  disconnectCode: any;
+  disconnectMessage: string | undefined;
+}
+
+interface CredentialUpdateEvent {
+  timestamp: number;
+  event: 'creds.update';
+  credsUpdated: string[];
+}
+
+type ConnectionEvent = ConnectionUpdateEvent | CredentialUpdateEvent;
+
+interface DebugResult {
+  socketCreated: boolean;
+  connectionEvents: ConnectionEvent[];
+  finalState: 'pending' | 'success' | 'failed' | 'timeout';
+  errorDetails: {
+    code: any;
+    message: string | undefined;
+  } | null;
+}
+
+interface FailedConnectionResult {
+  socketCreated: false;
+  error: string;
+}
 
 function getRedisClient(): Redis {
   const redisUrl = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || process.env.KV_KV_REST_API_URL;
@@ -33,8 +65,8 @@ export async function GET() {
     console.log('📋 Retrieved Redis data');
     
     // Try to create a connection to see what happens
-    let connectionAttemptResult = null;
-    let detectedIssues = [];
+    let connectionAttemptResult: DebugResult | FailedConnectionResult | null = null;
+    let detectedIssues: string[] = [];
     
     try {
       console.log('🔄 Attempting connection with stored credentials...');
@@ -70,7 +102,7 @@ export async function GET() {
         markOnlineOnConnect: false,
       });
       
-      let debugResult = {
+      let debugResult: DebugResult = {
         socketCreated: true,
         connectionEvents: [],
         finalState: 'pending',
@@ -118,7 +150,7 @@ export async function GET() {
             timestamp: Date.now(),
             event: 'creds.update',
             credsUpdated: Object.keys(creds || {})
-          });
+          } as CredentialUpdateEvent);
         });
       });
       
@@ -128,12 +160,20 @@ export async function GET() {
       connectionAttemptResult = {
         socketCreated: false,
         error: error instanceof Error ? error.message : String(error)
-      };
+      } as FailedConnectionResult;
       detectedIssues.push(`Socket creation failed: ${error instanceof Error ? error.message : String(error)}`);
     }
     
     // Analyze the stored credentials structure
-    let credentialAnalysis = null;
+    let credentialAnalysis: {
+      hasNoiseKey: boolean;
+      hasSignedIdentityKey: boolean;
+      hasSignedPreKey: boolean;
+      hasRegistrationId: boolean;
+      accountId: string;
+      platform: string;
+      credentialKeys: string[];
+    } | { error: string } | null = null;
     if (storedCreds) {
       try {
         const creds = typeof storedCreds === 'string' ? JSON.parse(storedCreds) : storedCreds;
@@ -153,13 +193,13 @@ export async function GET() {
     }
     
     // Check if we need QR vs should auto-connect
-    let shouldNeedQR = !storedCreds || detectedIssues.length > 0;
+    let shouldNeedQR: boolean = !storedCreds || detectedIssues.length > 0;
     
-    if (connectionAttemptResult?.finalState === 'failed' && connectionAttemptResult.errorDetails?.code === 515) {
+    if (connectionAttemptResult && 'finalState' in connectionAttemptResult && connectionAttemptResult.finalState === 'failed' && connectionAttemptResult.errorDetails?.code === 515) {
       detectedIssues.push('Code 515 detected - Stream error during connection. This indicates network/serverless timeout issues.');
     }
     
-    if (connectionAttemptResult?.finalState === 'failed' && connectionAttemptResult.errorDetails?.code === 405) {
+    if (connectionAttemptResult && 'finalState' in connectionAttemptResult && connectionAttemptResult.finalState === 'failed' && connectionAttemptResult.errorDetails?.code === 405) {
       detectedIssues.push('Code 405 detected - Connection failure. Common in serverless environments with network restrictions.');
     }
     

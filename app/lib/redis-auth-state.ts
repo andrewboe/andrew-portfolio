@@ -122,6 +122,42 @@ function deserializeWithUint8Arrays(obj: any): any {
   return obj;
 }
 
+// Convert Uint8Arrays to Buffers for Baileys compatibility
+function convertUint8ArraysToBuffers(obj: any): any {
+  if (obj === null || obj === undefined) return obj;
+  
+  // Convert Uint8Array to Buffer
+  if (obj instanceof Uint8Array) {
+    const buffer = Buffer.from(obj);
+    console.log(`🔄 Converted Uint8Array to Buffer (length: ${buffer.length})`);
+    return buffer;
+  }
+  
+  // Handle arrays
+  if (Array.isArray(obj)) {
+    return obj.map(item => convertUint8ArraysToBuffers(item));
+  }
+  
+  // Handle objects
+  if (typeof obj === 'object') {
+    const converted: any = {};
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        const convertedValue = convertUint8ArraysToBuffers(obj[key]);
+        converted[key] = convertedValue;
+        
+        // Debug logging for crypto keys
+        if (['noiseKey', 'signedIdentityKey', 'signedPreKey'].includes(key)) {
+          console.log(`🔧 Key ${key}: ${convertedValue instanceof Buffer ? 'Buffer' : typeof convertedValue} (length: ${convertedValue?.length || 'N/A'})`);
+        }
+      }
+    }
+    return converted;
+  }
+  
+  return obj;
+}
+
 export async function useRedisAuthState(): Promise<{
   state: AuthenticationState;
   saveCreds: () => Promise<void>;
@@ -136,8 +172,14 @@ export async function useRedisAuthState(): Promise<{
     // Try to load existing credentials from Redis
     const storedCreds = await redis.get(REDIS_KEYS.CREDS);
     if (storedCreds) {
-      creds = deserializeWithUint8Arrays(storedCreds) as AuthenticationCreds;
+      const deserializedCreds = deserializeWithUint8Arrays(storedCreds);
+      
+      // Convert Uint8Arrays to Buffers for Baileys compatibility
+      const baileysCreds = convertUint8ArraysToBuffers(deserializedCreds);
+      creds = baileysCreds as AuthenticationCreds;
+      
       console.log('✅ Loaded existing auth credentials from Redis');
+      console.log('🔧 Converted Uint8Arrays to Buffers for Baileys compatibility');
     } else {
       console.log('🔄 Using initial auth credentials for new session');
     }
@@ -187,9 +229,10 @@ export async function useRedisAuthState(): Promise<{
         await redis.set(REDIS_KEYS.CREDS, serializedCreds);
         console.log('✅ Saved auth credentials to Redis');
         
-        // Ensure the state.creds object has proper Uint8Arrays for immediate Baileys usage
-        state.creds = deserializeWithUint8Arrays(serializedCreds) as any;
-        console.log('🔧 Re-deserialized credentials for immediate Baileys usage');
+        // Ensure the state.creds object has proper format for immediate Baileys usage
+        const reDeserialized = deserializeWithUint8Arrays(serializedCreds);
+        state.creds = convertUint8ArraysToBuffers(reDeserialized) as any;
+        console.log('🔧 Re-deserialized and converted credentials to Buffers for immediate Baileys usage');
       }
       
       const serializedKeys = serializeWithUint8Arrays(keys);

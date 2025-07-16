@@ -146,7 +146,7 @@ export async function getWhatsAppConnection(): Promise<WASocket> {
   }
 }
 
-// Check if connection is ready for messaging
+// Check if WhatsApp connection is ready (serverless-friendly)
 export async function isConnectionReady(): Promise<boolean> {
   try {
     const state = await getConnectionState();
@@ -160,20 +160,20 @@ export async function isConnectionReady(): Promise<boolean> {
     // Check if connection is recent (within last hour)
     const timeSinceConnection = Date.now() - (state.connectedAt || 0);
     if (timeSinceConnection > 3600000) { // 1 hour
-      console.log('⚠️ Connection is stale');
+      console.log('⚠️ Connection is stale (over 1 hour old)');
+      await storeConnectionState({ 
+        isConnected: false, 
+        disconnectedAt: Date.now(),
+        reason: 'stale_connection'
+      });
       return false;
     }
     
-    // Try to get socket and verify it's functional
-    try {
-      const socket = await getWhatsAppConnection();
-      const user = socket.user;
-      console.log('✅ Connection is ready, user:', user?.id || 'unknown');
-      return !!user;
-    } catch (error) {
-      console.error('❌ Socket verification failed:', error);
-      return false;
-    }
+    console.log(`✅ Redis shows connected (${Math.floor(timeSinceConnection / 1000)}s ago)`);
+    return true;
+    
+    // Note: In serverless environment, we rely on Redis state rather than trying to verify active socket
+    // The socket verification was causing false negatives because sockets don't persist between function calls
   } catch (error) {
     console.error('❌ Error checking connection readiness:', error);
     return false;

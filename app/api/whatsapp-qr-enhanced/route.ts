@@ -52,7 +52,7 @@ async function attemptConnection(attemptNumber: number): Promise<ConnectionAttem
       const attemptTimeout = setTimeout(() => {
         if (!connectionResolved) {
           connectionResolved = true;
-          socket.end();
+          socket.end(new Error(`Attempt ${attemptNumber} timeout`));
           resolve({
             success: false,
             error: `Attempt ${attemptNumber} timed out after ${timeout.connect / 1000}s`,
@@ -75,7 +75,7 @@ async function attemptConnection(attemptNumber: number): Promise<ConnectionAttem
             clearTimeout(attemptTimeout);
             if (!connectionResolved) {
               connectionResolved = true;
-              socket.end();
+              socket.end(new Error(`QR generated successfully on attempt ${attemptNumber}`));
               resolve({
                 success: true,
                 qr,
@@ -91,7 +91,7 @@ async function attemptConnection(attemptNumber: number): Promise<ConnectionAttem
             clearTimeout(attemptTimeout);
             if (!connectionResolved) {
               connectionResolved = true;
-              socket.end();
+              socket.end(new Error(`Connection failed with code ${statusCode}`));
               
               if (statusCode === 405) {
                 resolve({
@@ -115,7 +115,7 @@ async function attemptConnection(attemptNumber: number): Promise<ConnectionAttem
           clearTimeout(attemptTimeout);
           if (!connectionResolved) {
             connectionResolved = true;
-            socket.end();
+            socket.end(new Error(`Handler error on attempt ${attemptNumber}`));
             resolve({
               success: false,
               error: `Handler error: ${error instanceof Error ? error.message : String(error)}`,

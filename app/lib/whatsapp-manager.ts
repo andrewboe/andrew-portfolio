@@ -20,7 +20,7 @@ import { Redis } from '@upstash/redis';
 let globalSocket: WASocket | null = null;
 let globalConnectionPromise: Promise<WASocket> | null = null;
 let lastConnectionTime = 0;
-const CONNECTION_TIMEOUT = 30000; // 30 seconds
+const CONNECTION_TIMEOUT = 20000; // 20 seconds (match debug endpoint)
 
 // Add connection logging (non-blocking, with proper error handling)
 async function logConnectionEvent(event: string, data?: any): Promise<void> {
@@ -66,8 +66,8 @@ async function createWhatsAppConnection(): Promise<{ success: boolean; socket?: 
     const socket = makeWASocket({
       auth: state,
       browser: Browsers.ubuntu('WhatsApp Bot'),
-      connectTimeoutMs: 30000, // 30 seconds (matches working debug endpoint)
-      defaultQueryTimeoutMs: 30000, // 30 seconds for queries
+      connectTimeoutMs: 20000, // 20 seconds (matches working debug endpoint)
+      defaultQueryTimeoutMs: 20000, // 20 seconds for queries
       keepAliveIntervalMs: 30000, // 30 seconds
       qrTimeout: 300000, // 5 minutes for QR timeout
       retryRequestDelayMs: 5000, // 5 seconds between retries
@@ -228,17 +228,24 @@ export async function getWhatsAppConnection(): Promise<WASocket> {
     }
   }
 
-  // Create new connection
-  globalConnectionPromise = (async () => {
-    const result = await createWhatsAppConnection();
-    if (result.success && result.socket) {
-      globalSocket = result.socket;
-      lastConnectionTime = Date.now();
-      return result.socket;
-    } else {
-      throw new Error(result.error || 'Failed to create connection');
-    }
-  })();
+  // Create new connection with serverless timeout protection
+  globalConnectionPromise = Promise.race([
+    (async () => {
+      const result = await createWhatsAppConnection();
+      if (result.success && result.socket) {
+        globalSocket = result.socket;
+        lastConnectionTime = Date.now();
+        return result.socket;
+      } else {
+        throw new Error(result.error || 'Failed to create connection');
+      }
+    })(),
+    new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('Connection attempt timed out after 25 seconds (serverless limit)'));
+      }, 25000); // 25 second hard limit to prevent Vercel timeout
+    })
+  ]);
 
   try {
     return await globalConnectionPromise;

@@ -14,8 +14,6 @@
     "@sendgrid/mail": "^8.1.5",
     "@types/node-cron": "^3.0.11",
     "@types/qrcode": "^1.5.5",
-    "@upstash/redis": "^1.35.1",
-    "@vercel/kv": "^3.0.0",
     "@whiskeysockets/baileys": "^6.7.18",
     "bufferutil": "^4.0.9",
     "framer-motion": "^12.23.3",

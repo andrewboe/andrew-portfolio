@@ -2,12 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../context/AdminContext';
 
 async function testWhatsAppMessage(token: string) {
-  const response = await fetch('/api/whatsapp/test', {
+  const response = await fetch('/api/whatsapp/local-test', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
-    }
+    },
+    body: JSON.stringify({
+      message: '🤖 Test message from WhatsApp Bot'
+      // No 'to' field - server will use WHATSAPP_GROUP_ID from environment
+    })
   });
 
   const data = await response.json();
@@ -19,23 +23,15 @@ async function testWhatsAppMessage(token: string) {
 }
 
 async function fetchWhatsAppGroups(token: string) {
-  const response = await fetch('/api/whatsapp/groups', {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  });
-
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.error || 'Failed to fetch WhatsApp groups');
-  }
-
-  return data;
+  // For now, return placeholder since we're using clean local setup
+  return { 
+    success: true, 
+    groups: [{ id: 'local-group', name: 'Local Development Group' }] 
+  };
 }
 
 async function fetchQRCode(token: string) {
-  const response = await fetch('/api/whatsapp/qr', {
+  const response = await fetch('/api/whatsapp/local-test?action=qr', {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`
@@ -51,7 +47,7 @@ async function fetchQRCode(token: string) {
 }
 
 async function fetchConnectionStatus(token: string) {
-  const response = await fetch('/api/whatsapp/status', {
+  const response = await fetch('/api/whatsapp/local-test?action=status', {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`
@@ -67,8 +63,8 @@ async function fetchConnectionStatus(token: string) {
 }
 
 async function clearAuthState(token: string) {
-  const response = await fetch('/api/whatsapp/clear-auth', {
-    method: 'POST',
+  const response = await fetch('/api/whatsapp/local-test?action=clear', {
+    method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`
     }

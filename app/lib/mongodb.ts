@@ -2,10 +2,10 @@ import mongoose from 'mongoose';
 import sgMail from '@sendgrid/mail';
 import { 
   sendMessage, 
-  getQRForAuth, 
-  clearAuthData, 
+  getQRCode, 
+  clearAuthState, 
   getConnectionStatus as getWhatsAppConnectionStatus 
-} from './whatsapp-manager';
+} from './local-baileys';
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI as string)
@@ -41,7 +41,7 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY as string);
 // Export models
 export { RSVP, Contact };
 
-// WhatsApp Bot functionality - Redis-based serverless approach
+// WhatsApp Bot functionality - Clean local Baileys approach
 
 export async function sendTestMessage(): Promise<{success: boolean; message?: string; error?: string}> {
   try {
@@ -134,7 +134,7 @@ Let's have a great game everyone! See you on the field! 🏆
 
 export async function getWhatsAppGroups() {
   try {
-    // In serverless environment, we don't maintain persistent group lists
+    // In local development, we don't maintain persistent group lists
     // This is a placeholder for compatibility
     return { groups: [] };
   } catch (error) {
@@ -142,13 +142,13 @@ export async function getWhatsAppGroups() {
   }
 }
 
-// WhatsApp functions using the new Redis-based serverless manager
-export async function getQRCode(): Promise<{success: boolean; qr?: string; error?: string}> {
-  return await getQRForAuth();
+// WhatsApp functions using the clean local Baileys
+export async function getQRCodeForAuth(): Promise<{success: boolean; qr?: string; error?: string}> {
+  return await getQRCode();
 }
 
-export async function clearAuthState(): Promise<{success: boolean; message?: string; error?: string}> {
-  return await clearAuthData();
+export async function clearAuthStateForApp(): Promise<{success: boolean; message?: string; error?: string}> {
+  return await clearAuthState();
 }
 
 export async function getConnectionStatus() {

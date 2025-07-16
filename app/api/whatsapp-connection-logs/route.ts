@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { getConnectionState, getStoredQRCode } from '../../lib/redis-auth-state';
 import { Redis } from '@upstash/redis';
 
 export const runtime = 'nodejs';
@@ -16,50 +15,61 @@ function getRedisClient(): Redis {
 
 export async function GET() {
   try {
-    console.log('📋 Getting WhatsApp connection logs and timeline...');
+    console.log('📋 Fetching WhatsApp connection logs...');
     
     const redis = getRedisClient();
+    const logs = await redis.get('whatsapp:connection_logs') as any[] || [];
     
-    // Get all WhatsApp-related keys
-    const connectionState = await getConnectionState();
-    const qrCode = await getStoredQRCode();
+    // Get the last 10 logs for analysis
+    const recentLogs = logs.slice(-10);
     
-    // Get connection logs if they exist
-    const connectionLogs = await redis.get('whatsapp:connection_logs') || [];
+    // Analyze the logs
+    let analysis = {
+      totalLogs: logs.length,
+      recentEvents: [] as string[],
+      lastConnectionAttempt: null as any,
+      connectionIssues: [] as string[]
+    };
     
-    // Calculate timeline
-    const now = Date.now();
-    const timeSinceDisconnect = connectionState.disconnectedAt ? 
-      now - connectionState.disconnectedAt : null;
-    const timeSinceConnect = connectionState.connectedAt ? 
-      now - connectionState.connectedAt : null;
+    if (recentLogs.length > 0) {
+      analysis.lastConnectionAttempt = recentLogs[recentLogs.length - 1];
+      analysis.recentEvents = recentLogs.map(log => `${log.iso}: ${log.event}`);
+      
+      // Look for specific issues
+      for (const log of recentLogs) {
+        if (log.event === 'connection_close' && log.data?.disconnectCode === 405) {
+          analysis.connectionIssues.push('Code 405 - Connection Failure (serverless/network issue)');
+        }
+        if (log.event === 'connection_close' && log.data?.disconnectReason?.includes('timeout')) {
+          analysis.connectionIssues.push('Timeout during connection');
+        }
+        if (log.data?.error && log.data.error.includes('Uint8Array')) {
+          analysis.connectionIssues.push('Uint8Array serialization error');
+        }
+      }
+    }
     
     return NextResponse.json({
       success: true,
-      connectionState,
-      timeline: {
-        currentTime: now,
-        timeSinceDisconnect: timeSinceDisconnect ? `${Math.floor(timeSinceDisconnect / 1000)}s ago` : null,
-        timeSinceConnect: timeSinceConnect ? `${Math.floor(timeSinceConnect / 1000)}s ago` : null,
-        hasQR: !!qrCode,
-        qrAge: qrCode ? 'Active QR available' : 'No QR available'
-      },
-      logs: connectionLogs,
-      rawState: {
-        connectionState: await redis.get('whatsapp:connection_state'),
-        qrExists: !!qrCode,
-        credsExists: !!(await redis.get('whatsapp:creds')),
-        keysExists: !!(await redis.get('whatsapp:keys'))
-      }
+      analysis,
+      recentLogs,
+      allLogs: logs,
+      recommendations: analysis.connectionIssues.length > 0 ? [
+        'Consider reducing connection timeout to match debug endpoint (30s)',
+        'Check serverless function timeout limits',
+        'Monitor for consistent 405 errors indicating network issues'
+      ] : [
+        'Connection logs look normal',
+        'Issues may be timing-related rather than authentication'
+      ]
     });
     
   } catch (error) {
-    console.error('❌ Error getting connection logs:', error);
-    
+    console.error('❌ Error fetching connection logs:', error);
     return NextResponse.json({
       success: false,
-      error: (error as Error).message,
-      timestamp: Date.now()
+      error: 'Failed to fetch connection logs',
+      details: error instanceof Error ? error.message : String(error)
     }, { status: 500 });
   }
 } 

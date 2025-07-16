@@ -66,8 +66,8 @@ async function createWhatsAppConnection(): Promise<{ success: boolean; socket?: 
     const socket = makeWASocket({
       auth: state,
       browser: Browsers.ubuntu('WhatsApp Bot'),
-      connectTimeoutMs: 120000, // 2 minutes (increased from 60s for serverless)
-      defaultQueryTimeoutMs: 120000, // 2 minutes for queries
+      connectTimeoutMs: 30000, // 30 seconds (matches working debug endpoint)
+      defaultQueryTimeoutMs: 30000, // 30 seconds for queries
       keepAliveIntervalMs: 30000, // 30 seconds
       qrTimeout: 300000, // 5 minutes for QR timeout
       retryRequestDelayMs: 5000, // 5 seconds between retries

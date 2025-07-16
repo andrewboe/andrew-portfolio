@@ -258,9 +258,9 @@ export async function getWhatsAppConnection(): Promise<WASocket> {
     })(),
     new Promise<never>((_, reject) => {
       setTimeout(() => {
-        console.log(`🚨 [MAIN: ${Date.now() - mainStartTime}ms] TIMEOUT TRIGGERED - 15 seconds reached`);
-        reject(new Error('TIMEOUT: Main connection timeout after 15 seconds (diagnostic mode)'));
-      }, 15000); // Shorter timeout for debugging
+        console.log(`🚨 [MAIN: ${Date.now() - mainStartTime}ms] TIMEOUT TRIGGERED - 50 seconds reached`);
+        reject(new Error('TIMEOUT: Main connection timeout after 50 seconds'));
+      }, 50000); // Allow proper time for WhatsApp handshake
     })
   ]);
 

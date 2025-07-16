@@ -21,17 +21,11 @@ export async function GET() {
       token: redisToken,
     });
     
-    // Get recent connection events from Redis logs
-    const logs = await redis.lrange('whatsapp:connection:logs', 0, 49); // Last 50 events
+    // Get recent connection events from Redis logs (stored as JSON array)
+    const logs = await redis.get('whatsapp:connection_logs') as any[];
     
-    // Parse and format logs
-    const parsedLogs = logs.map(log => {
-      try {
-        return JSON.parse(log);
-      } catch {
-        return { event: 'parse_error', data: log };
-      }
-    }).reverse(); // Show newest first
+    // Format logs (already parsed, just reverse to show newest first)
+    const parsedLogs = Array.isArray(logs) ? logs.reverse() : [];
     
     // Get current connection state
     const { getConnectionState } = await import('../../../lib/redis-auth-state');

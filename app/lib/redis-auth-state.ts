@@ -27,7 +27,7 @@ const REDIS_KEYS = {
 
 // Use Baileys' own AuthenticationCreds type instead of custom interface
 
-// Utility functions for serialization that handles all Uint8Array fields recursively
+// Utility functions for serialization that handles both Uint8Array and Buffer objects
 function serializeWithUint8Arrays(obj: any): any {
   if (obj === null || obj === undefined) return obj;
   
@@ -35,6 +35,13 @@ function serializeWithUint8Arrays(obj: any): any {
     return {
       __type: 'Uint8Array',
       data: Buffer.from(obj).toString('base64')
+    };
+  }
+  
+  if (Buffer.isBuffer(obj)) {
+    return {
+      __type: 'Buffer',
+      data: obj.toString('base64')
     };
   }
   
@@ -60,6 +67,10 @@ function deserializeWithUint8Arrays(obj: any): any {
   
   if (typeof obj === 'object' && obj.__type === 'Uint8Array') {
     return new Uint8Array(Buffer.from(obj.data, 'base64'));
+  }
+  
+  if (typeof obj === 'object' && obj.__type === 'Buffer') {
+    return Buffer.from(obj.data, 'base64');
   }
   
   if (Array.isArray(obj)) {

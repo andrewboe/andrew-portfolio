@@ -173,9 +173,23 @@ export async function useRedisAuthState(): Promise<{
   const saveCreds = async () => {
     try {
       if (state.creds) {
+        // Debug logging for credential types before saving
+        const cryptoKeys = ['noiseKey', 'signedIdentityKey', 'signedPreKey'];
+        console.log('🔍 Credential types before saving:');
+        for (const key of cryptoKeys) {
+          const value = (state.creds as any)[key];
+          if (value) {
+            console.log(`  ${key}: ${value instanceof Uint8Array ? 'Uint8Array' : typeof value} (length: ${value?.length || 'N/A'})`);
+          }
+        }
+        
         const serializedCreds = serializeWithUint8Arrays(state.creds);
         await redis.set(REDIS_KEYS.CREDS, serializedCreds);
         console.log('✅ Saved auth credentials to Redis');
+        
+        // Ensure the state.creds object has proper Uint8Arrays for immediate Baileys usage
+        state.creds = deserializeWithUint8Arrays(serializedCreds) as any;
+        console.log('🔧 Re-deserialized credentials for immediate Baileys usage');
       }
       
       const serializedKeys = serializeWithUint8Arrays(keys);

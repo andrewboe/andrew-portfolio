@@ -6,9 +6,20 @@ export async function GET() {
   try {
     console.log('📊 Getting recent connection logs...');
     
-    // Import Redis functions
-    const { getRedisClient } = await import('../../../lib/redis-auth-state');
-    const redis = getRedisClient();
+    // Create Redis client directly
+    const { Redis } = await import('@upstash/redis');
+    
+    const redisUrl = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || process.env.KV_KV_REST_API_URL;
+    const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN || process.env.KV_KV_REST_API_TOKEN;
+    
+    if (!redisUrl || !redisToken) {
+      throw new Error('Redis environment variables not found');
+    }
+    
+    const redis = new Redis({
+      url: redisUrl,
+      token: redisToken,
+    });
     
     // Get recent connection events from Redis logs
     const logs = await redis.lrange('whatsapp:connection:logs', 0, 49); // Last 50 events

@@ -56,7 +56,7 @@ export async function GET() {
       if (qr) {
         console.log(`✅ QR generated after ${i + 1} seconds`);
         // Close socket to prevent memory leaks
-        socket.end(undefined);
+        socket.end(new Error('QR generation complete'));
         return NextResponse.json({
           success: true,
           qr,
@@ -66,7 +66,7 @@ export async function GET() {
     }
     
     console.log('❌ QR generation timeout');
-    socket.end(undefined);
+    socket.end(new Error('QR generation timeout'));
     return NextResponse.json({
       success: false,
       error: 'QR generation timed out after 30 seconds'

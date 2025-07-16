@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "app/api/whatsapp/**/*.ts": {
+      "maxDuration": 300
+    }
+  },
   "crons": [
     {
       "path": "/api/cron/softball/reset",

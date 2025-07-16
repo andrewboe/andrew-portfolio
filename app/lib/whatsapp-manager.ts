@@ -80,8 +80,8 @@ async function createWhatsAppConnection(): Promise<{ success: boolean; socket?: 
     const socket = makeWASocket({
       auth: state,
       browser: Browsers.ubuntu('WhatsApp Bot'),
-      connectTimeoutMs: 60000, // 60 seconds - extended for full handshake
-      defaultQueryTimeoutMs: 45000, // 45 seconds for queries
+      connectTimeoutMs: 90000, // 90 seconds - maximum time for full handshake
+      defaultQueryTimeoutMs: 60000, // 60 seconds for queries
       keepAliveIntervalMs: 30000, // 30 seconds
       qrTimeout: 300000, // 5 minutes for QR timeout
       retryRequestDelayMs: 5000, // 5 seconds between retries
@@ -305,9 +305,9 @@ export async function getWhatsAppConnection(): Promise<WASocket> {
     })(),
     new Promise<never>((_, reject) => {
       setTimeout(() => {
-        console.log(`🚨 [MAIN: ${Date.now() - mainStartTime}ms] TIMEOUT TRIGGERED - 50 seconds reached`);
-        reject(new Error('TIMEOUT: Main connection timeout after 50 seconds'));
-      }, 50000); // Allow proper time for WhatsApp handshake
+        console.log(`🚨 [MAIN: ${Date.now() - mainStartTime}ms] TIMEOUT TRIGGERED - 80 seconds reached`);
+        reject(new Error('TIMEOUT: Main connection timeout after 80 seconds'));
+      }, 80000); // Extended timeout to match Baileys settings
     })
   ]);
 

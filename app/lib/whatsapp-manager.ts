@@ -20,7 +20,7 @@ import { Redis } from '@upstash/redis';
 let globalSocket: WASocket | null = null;
 let globalConnectionPromise: Promise<WASocket> | null = null;
 let lastConnectionTime = 0;
-const CONNECTION_TIMEOUT = 20000; // 20 seconds (match debug endpoint)
+const CONNECTION_TIMEOUT = 60000; // 60 seconds - allow time for full handshake
 
 // Add connection logging (non-blocking, with proper error handling)
 async function logConnectionEvent(event: string, data?: any): Promise<void> {

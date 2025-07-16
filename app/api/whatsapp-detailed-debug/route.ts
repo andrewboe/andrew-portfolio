@@ -80,7 +80,7 @@ export async function GET() {
       // Monitor connection for 20 seconds
       const connectionPromise = new Promise((resolve) => {
         const timeout = setTimeout(() => {
-          socket.end();
+          socket.end(new Error('Debug timeout'));
           debugResult.finalState = 'timeout';
           resolve(debugResult);
         }, 20000);
@@ -98,12 +98,12 @@ export async function GET() {
           
           if (connection === 'open') {
             clearTimeout(timeout);
-            socket.end();
+            socket.end(new Error('Debug complete - connection successful'));
             debugResult.finalState = 'success';
             resolve(debugResult);
           } else if (connection === 'close') {
             clearTimeout(timeout);
-            socket.end();
+            socket.end(new Error('Debug complete - connection failed'));
             debugResult.finalState = 'failed';
             debugResult.errorDetails = {
               code: (lastDisconnect?.error as any)?.output?.statusCode,

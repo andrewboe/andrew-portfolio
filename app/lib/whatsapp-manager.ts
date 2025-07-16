@@ -66,6 +66,17 @@ async function createWhatsAppConnection(): Promise<{ success: boolean; socket?: 
     const { state, saveCreds } = await useRedisAuthState();
     console.log(`⏱️  [${Date.now() - startTime}ms] Step 2: Auth state loaded, creating socket...`);
     
+    // Diagnostic: Check auth state quality
+    const stateKeys = Object.keys(state.creds || {});
+    const keyCount = Object.keys(state.keys || {}).length;
+    console.log(`⏱️  [${Date.now() - startTime}ms] 🔍 Auth state diagnostic: creds keys=${stateKeys.length}, keys count=${keyCount}`);
+    await logConnectionEvent('auth_state_diagnostic', { 
+      credsKeys: stateKeys, 
+      keysCount: keyCount,
+      hasSignedIdentityKey: !!(state.creds as any)?.signedIdentityKey,
+      hasNoiseKey: !!(state.creds as any)?.noiseKey
+    });
+    
     const socket = makeWASocket({
       auth: state,
       browser: Browsers.ubuntu('WhatsApp Bot'),
@@ -84,7 +95,24 @@ async function createWhatsAppConnection(): Promise<{ success: boolean; socket?: 
       generateHighQualityLinkPreview: false, // Disable to reduce processing
     });
     
-    console.log(`⏱️  [${Date.now() - startTime}ms] Step 3: Socket created, setting up event handlers...`);
+    console.log(`⏱️  [${Date.now() - startTime}ms] Step 3: Socket created, setting up event monitoring and handlers...`);
+    
+    // Add comprehensive event monitoring FIRST to catch ALL events
+    console.log(`⏱️  [${Date.now() - startTime}ms] 🔍 Setting up comprehensive event monitoring...`);
+    
+    // Monitor ALL socket events to see what's actually happening
+    const originalEv = socket.ev;
+    const originalOn = originalEv.on.bind(originalEv);
+    
+    // Intercept all events for debugging
+    originalEv.on = function(event: any, handler: any) {
+      const wrappedHandler = async (...args: any[]) => {
+        console.log(`⏱️  [${Date.now() - startTime}ms] 📡 EVENT FIRED: ${event}`);
+        await logConnectionEvent('event_fired', { event, argsCount: args.length });
+        return handler(...args);
+      };
+      return originalOn(event, wrappedHandler);
+    };
     
     // Enhanced connection event handler with detailed logging
     socket.ev.on('connection.update', async (update) => {
@@ -191,8 +219,11 @@ async function createWhatsAppConnection(): Promise<{ success: boolean; socket?: 
     });
 
     // Enhanced credential update handler with retry logic
+    console.log(`⏱️  [${Date.now() - startTime}ms] 🔧 Setting up creds.update handler...`);
+    await logConnectionEvent('creds_handler_setup');
+    
     socket.ev.on('creds.update', async () => {
-      console.log(`⏱️  [${Date.now() - startTime}ms] Credentials updated - saving to Redis...`);
+      console.log(`⏱️  [${Date.now() - startTime}ms] 🔑 CREDENTIAL UPDATE TRIGGERED! Saving to Redis...`);
       await logConnectionEvent('creds_update_start');
       
       // Retry logic for credential saving (critical for handshake success)

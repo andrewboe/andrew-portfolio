@@ -65,23 +65,55 @@ function serializeWithUint8Arrays(obj: any): any {
 function deserializeWithUint8Arrays(obj: any): any {
   if (obj === null || obj === undefined) return obj;
   
+  // Handle string data that needs to be parsed first
+  if (typeof obj === 'string') {
+    try {
+      obj = JSON.parse(obj);
+    } catch (error) {
+      return obj; // Return as-is if not valid JSON
+    }
+  }
+  
+  // Handle serialized Uint8Array objects
   if (typeof obj === 'object' && obj.__type === 'Uint8Array') {
-    return new Uint8Array(Buffer.from(obj.data, 'base64'));
+    try {
+      const buffer = Buffer.from(obj.data, 'base64');
+      const uint8Array = new Uint8Array(buffer);
+      console.log(`🔧 Deserialized Uint8Array of length ${uint8Array.length}`);
+      return uint8Array;
+    } catch (error) {
+      console.error('❌ Failed to deserialize Uint8Array:', error);
+      return obj;
+    }
   }
   
+  // Handle serialized Buffer objects
   if (typeof obj === 'object' && obj.__type === 'Buffer') {
-    return Buffer.from(obj.data, 'base64');
+    try {
+      return Buffer.from(obj.data, 'base64');
+    } catch (error) {
+      console.error('❌ Failed to deserialize Buffer:', error);
+      return obj;
+    }
   }
   
+  // Handle arrays
   if (Array.isArray(obj)) {
     return obj.map(item => deserializeWithUint8Arrays(item));
   }
   
+  // Handle objects
   if (typeof obj === 'object') {
     const deserialized: any = {};
     for (const key in obj) {
       if (obj.hasOwnProperty(key)) {
-        deserialized[key] = deserializeWithUint8Arrays(obj[key]);
+        const deserializedValue = deserializeWithUint8Arrays(obj[key]);
+        deserialized[key] = deserializedValue;
+        
+        // Debug logging for crypto keys
+        if (['noiseKey', 'signedIdentityKey', 'signedPreKey'].includes(key)) {
+          console.log(`🔍 Key ${key}: ${deserializedValue instanceof Uint8Array ? 'Uint8Array' : typeof deserializedValue} (length: ${deserializedValue?.length || 'N/A'})`);
+        }
       }
     }
     return deserialized;

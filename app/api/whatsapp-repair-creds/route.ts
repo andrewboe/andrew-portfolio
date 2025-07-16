@@ -108,7 +108,7 @@ export async function POST() {
     console.log('📋 Found existing credentials, analyzing...');
     
     // Analyze current credential structure
-    let currentCreds = storedCreds;
+    let currentCreds: any = storedCreds;
     if (typeof storedCreds === 'string') {
       currentCreds = JSON.parse(storedCreds);
     }
@@ -169,7 +169,7 @@ export async function POST() {
     
     // Also repair keys if they exist
     if (storedKeys) {
-      let currentKeys = storedKeys;
+      let currentKeys: any = storedKeys;
       if (typeof storedKeys === 'string') {
         currentKeys = JSON.parse(storedKeys);
       }

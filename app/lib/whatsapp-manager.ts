@@ -22,32 +22,36 @@ let globalConnectionPromise: Promise<WASocket> | null = null;
 let lastConnectionTime = 0;
 const CONNECTION_TIMEOUT = 30000; // 30 seconds
 
-// Add connection logging
+// Add connection logging (non-blocking, with proper error handling)
 async function logConnectionEvent(event: string, data?: any): Promise<void> {
   try {
     const redisUrl = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || process.env.KV_KV_REST_API_URL;
     const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN || process.env.KV_KV_REST_API_TOKEN;
     
-    if (redisUrl && redisToken) {
-      const redis = new Redis({ url: redisUrl, token: redisToken });
-      const logs = (await redis.get('whatsapp:connection_logs') as any[]) || [];
-      
-      logs.push({
-        timestamp: Date.now(),
-        event,
-        data,
-        iso: new Date().toISOString()
-      });
-      
-      // Keep only last 20 log entries
-      if (logs.length > 20) {
-        logs.splice(0, logs.length - 20);
-      }
-      
-      await redis.set('whatsapp:connection_logs', logs, { ex: 3600 }); // 1 hour expiry
+    if (!redisUrl || !redisToken) {
+      // Silently skip logging if Redis not configured
+      return;
     }
+
+    const redis = new Redis({ url: redisUrl, token: redisToken });
+    const logs = (await redis.get('whatsapp:connection_logs') as any[]) || [];
+    
+    logs.push({
+      timestamp: Date.now(),
+      event,
+      data,
+      iso: new Date().toISOString()
+    });
+    
+    // Keep only last 20 log entries
+    if (logs.length > 20) {
+      logs.splice(0, logs.length - 20);
+    }
+    
+    await redis.set('whatsapp:connection_logs', logs, { ex: 3600 }); // 1 hour expiry
   } catch (error) {
-    console.error('❌ Error logging connection event:', error);
+    // Silent failure - don't break the connection process if logging fails
+    console.warn('⚠️ Logging failed (non-critical):', error.message);
   }
 }
 
@@ -67,7 +71,7 @@ async function createWhatsAppConnection(): Promise<{ success: boolean; socket?: 
       printQRInTerminal: false,
       syncFullHistory: false,
       markOnlineOnConnect: false,
-      version: [2, 2413, 1], // Specific version for stability
+      // Removed version specification that might be causing issues
     });
     
     // Enhanced connection event handler with detailed logging

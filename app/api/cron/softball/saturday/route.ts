@@ -1,4 +1,4 @@
-import { sendSaturdayReminder } from '@/app/lib/mongodb';
+import { sendSaturdayReminder } from '@/app/lib/notification-service';
 import { NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';

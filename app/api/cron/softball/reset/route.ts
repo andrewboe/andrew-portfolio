@@ -1,4 +1,4 @@
-import { resetRSVPs } from '@/app/lib/mongodb';
+import { resetRSVPs } from '@/app/lib/database-service';
 import { NextResponse } from 'next/server';
 
 export async function GET() {

@@ -2,8 +2,7 @@ import makeWASocket, {
   Browsers, 
   DisconnectReason,
   WASocket,
-  useMultiFileAuthState,
-  ConnectionState
+  useMultiFileAuthState
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import * as fs from 'fs';
@@ -25,7 +24,7 @@ async function createConnection(): Promise<WASocket> {
   
   const socket = makeWASocket({
     auth: state,
-    browser: Browsers.ubuntu('WhatsApp Bot'),
+    browser: ["Windows", "Chrome", "Chrome 114.0.5735.198"],
     // Use the exact working settings from the commit
     connectTimeoutMs: 120000, // 2 minutes (from working commit)
     defaultQueryTimeoutMs: 120000, // 2 minutes for queries
@@ -180,7 +179,7 @@ export async function clearAuthState(): Promise<{success: boolean; message?: str
   try {
     // Close existing connection
     if (globalSocket) {
-      globalSocket.end();
+      globalSocket.end(undefined);
       globalSocket = null;
     }
     

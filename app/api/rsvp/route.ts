@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { RSVP } from '@/app/lib/mongodb';
+import { getAllRSVPs, addOrUpdateRSVP } from '@/app/lib/database-service';
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const rsvp = await RSVP.create(body);
+    const rsvp = await addOrUpdateRSVP(body);
     return NextResponse.json(rsvp, { status: 201 });
   } catch (error) {
     return NextResponse.json(
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
 
 export async function GET() {
   try {
-    const rsvps = await RSVP.find().sort({ createdAt: -1 });
+    const rsvps = await getAllRSVPs();
     return NextResponse.json(rsvps);
   } catch (error) {
     return NextResponse.json(

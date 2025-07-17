@@ -137,7 +137,7 @@ export default function WhatsAppTestButtons() {
       const result = await fetchWhatsAppGroups(token!);
       setStatus({
         type: 'success',
-        message: result.message || 'Groups fetched successfully',
+        message: 'Groups fetched successfully',
         apiResponse: result.groups
       });
     } catch (error) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { resetRSVPs } from '@/app/lib/mongodb';
+import { resetRSVPs } from '@/app/lib/database-service';
 
 export async function POST(req: NextRequest) {
   try {

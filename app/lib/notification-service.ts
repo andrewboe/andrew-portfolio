@@ -6,7 +6,7 @@ import { sendNotification } from './whatsapp-service';
 export async function sendWednesdayReminder(): Promise<{success: boolean; message?: string; error?: string}> {
   try {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://andrewboe.dev';
-    const rsvpUrl = `${appUrl}/softball`;
+    const rsvpUrl = `${appUrl}`;
 
     const messageText = `🥎 S.O.F.T.B.A.L.L. REMINDER 🥎
 
@@ -38,7 +38,7 @@ export async function sendSaturdayReminder(): Promise<{success: boolean; message
     // Get current RSVP stats to include in reminder
     const stats = await getRSVPStats();
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://andrewboe.dev';
-    const rsvpUrl = `${appUrl}/softball`;
+    const rsvpUrl = `${appUrl}`;
 
     const messageText = `🥎 TOMORROW IS GAME DAY! 🥎
 

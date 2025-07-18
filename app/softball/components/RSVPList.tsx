@@ -50,15 +50,15 @@ export default function RSVPList({ rsvps }: RSVPListProps) {
                   className="bg-black/50 border-2 border-primary/30 p-4 shadow-pixel"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-white">{rsvp.playerName}</span>
+                    <span className="text-white">{rsvp.name}</span>
                     <span className={`px-2 py-1 text-xs text-white ${STATUS_COLORS[status as RSVPStatus]} shadow-pixel uppercase`}>
                       {status}
                     </span>
                   </div>
-                  {rsvp.comment && (
+                  {rsvp.comments && (
                     <div className="mt-2 text-sm text-gray-300">
                       <CommentText 
-                        text={rsvp.comment}
+                        text={rsvp.comments}
                         isExpanded={expandedComments.has(rsvp._id)}
                         onToggle={() => toggleComment(rsvp._id)}
                       />

@@ -4,9 +4,27 @@ import { getAllRSVPs, addOrUpdateRSVP } from '@/app/lib/database-service';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const rsvp = await addOrUpdateRSVP(body);
+    const { playerName, status, comment } = body;
+
+    // Validate required fields
+    if (!playerName || !status) {
+      return NextResponse.json(
+        { error: 'Player name and status are required' },
+        { status: 400 }
+      );
+    }
+
+    // Map form data to database format
+    const rsvpData = {
+      name: playerName.trim(),
+      status: status,
+      comments: comment?.trim() || ''
+    };
+
+    const rsvp = await addOrUpdateRSVP(rsvpData);
     return NextResponse.json(rsvp, { status: 201 });
   } catch (error) {
+    console.error('RSVP API error:', error);
     return NextResponse.json(
       { error: 'Failed to create RSVP' },
       { status: 500 }

@@ -6,14 +6,11 @@ mongoose.connect(process.env.MONGODB_URI as string)
   .then(() => console.log('✅ Connected to MongoDB'))
   .catch((error) => console.error('❌ MongoDB connection error:', error));
 
-// RSVP Schema
+// RSVP Schema - Simple: name, yes/no/maybe, comments
 const rsvpSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  email: { type: String, required: true },
-  phone: { type: String, required: true },
-  status: { type: String, enum: ['yes', 'no'], required: true },
+  status: { type: String, enum: ['yes', 'no', 'maybe'], required: true },
   comments: { type: String, default: '' },
-  gameDate: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
 });
 
@@ -48,19 +45,17 @@ export async function getAllRSVPs() {
 
 export async function addOrUpdateRSVP(rsvpData: {
   name: string;
-  email: string;
-  phone: string;
-  status: 'yes' | 'no';
+  status: 'yes' | 'no' | 'maybe';
   comments?: string;
-  gameDate: string;
 }) {
   try {
+    // Check if player has already RSVPed (by name)
     const existingRSVP = await RSVP.findOne({ 
-      email: rsvpData.email, 
-      gameDate: rsvpData.gameDate 
+      name: rsvpData.name 
     });
 
     if (existingRSVP) {
+      // Update existing RSVP
       const updated = await RSVP.findByIdAndUpdate(
         existingRSVP._id,
         rsvpData,
@@ -68,6 +63,7 @@ export async function addOrUpdateRSVP(rsvpData: {
       );
       return updated;
     } else {
+      // Create new RSVP
       const newRSVP = new RSVP(rsvpData);
       const saved = await newRSVP.save();
       return saved;
@@ -94,11 +90,13 @@ export async function getRSVPStats() {
     const totalRSVPs = await RSVP.countDocuments();
     const yesRSVPs = await RSVP.countDocuments({ status: 'yes' });
     const noRSVPs = await RSVP.countDocuments({ status: 'no' });
+    const maybeRSVPs = await RSVP.countDocuments({ status: 'maybe' });
     
     return {
       total: totalRSVPs,
       yes: yesRSVPs,
-      no: noRSVPs
+      no: noRSVPs,
+      maybe: maybeRSVPs
     };
   } catch (error) {
     console.error('Error getting RSVP stats:', error);

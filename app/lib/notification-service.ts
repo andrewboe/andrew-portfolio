@@ -44,7 +44,7 @@ export async function sendSaturdayReminder(): Promise<{success: boolean; message
 
 Sunday Softball Reminder! ⚾
 
-🏟️ Current RSVPs: ${stats.yes} Yes, ${stats.no} No
+🏟️ Current RSVPs: ${stats.yes} Yes, ${stats.no} No, ${stats.maybe} Maybe
 
 If you haven't already, please confirm your attendance: ${rsvpUrl}
 

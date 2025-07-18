@@ -1,8 +1,8 @@
 export interface RSVP {
   _id: string;
-  playerName: string;
+  name: string;
   status: RSVPStatus;
-  comment?: string;
+  comments?: string;
   createdAt: string;
 }
 

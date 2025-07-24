@@ -64,18 +64,7 @@ export default function HeroSection() {
               return { ...drop, y: 0, x: Math.random() * 100 };
             }
           }
-          // Avoid hero text
-          if (heroRef.current) {
-            const sectionRect = heroRef.current.getBoundingClientRect();
-            const dropXAbs = sectionRect.left + (drop.x / 100) * sectionRect.width;
-            const dropYAbs = sectionRect.top + (drop.y / 100) * sectionRect.height;
-            const textRects = [nameRef, descRef, linksRef, buttonRef]
-              .map((r) => r.current?.getBoundingClientRect())
-              .filter(Boolean) as DOMRect[];
-            if (textRects.some((rect) => isInsideRect(dropXAbs, dropYAbs, rect))) {
-              return { ...drop, y: 0, x: Math.random() * 100 };
-            }
-          }
+          // Text collision removed - let raindrops fall through text elements
           // Move drop down
           let newY = drop.y + drop.speed;
           if (newY > 100) {

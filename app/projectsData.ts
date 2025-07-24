@@ -8,7 +8,7 @@ export const PROJECTS = [
   },
   {
     title: "Softball Team RSVP",
-    desc: "A Next.js using MongoDB, SendGrid and WhatsApp API to manage softball team RSVPs",
+    desc: "A Next.js using MongoDB, SendGrid and WhatsApp Web Socket to manage softball team RSVPs",
     img: "/softballapp.png",
     link: "softball-rsvp",
     live: "https://www.andrewboe.dev/softball",

@@ -1,8 +1,24 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Andrew's Portfolio & Softball RSVP App
 
-## Getting Started
+This is a [Next.js](https://nextjs.org) project with a **separated microservice architecture**:
 
-First, set up your environment variables by creating a `.env.local` file in the root directory with the following variables:
+- **Vercel**: Hosts the web app, database, cron jobs, and API routes
+- **Railway**: Provides persistent WhatsApp connection and messaging
+
+## 🏗️ Architecture
+
+```
+Vercel (Web + Database) ←→ Railway (WhatsApp) ←→ WhatsApp Groups
+     ↑                         ↑
+  MongoDB + SendGrid      Persistent Baileys
+  Cron Jobs + UI          Connection + QR Setup
+```
+
+## 🚀 Quick Setup
+
+### **Step 1: Vercel Environment Variables**
+
+Create a `.env.local` file for local development:
 
 ```bash
 # MongoDB
@@ -12,60 +28,151 @@ MONGODB_URI=your_mongodb_connection_string
 SENDGRID_API_KEY=your_sendgrid_api_key
 SENDGRID_FROM_EMAIL=your_verified_sender_email
 
-# WhatsApp (for RSVP reminders)
-WHATSAPP_TO_NUMBER=your_whatsapp_number
-WHATSAPP_ACCESS_TOKEN=your_whatsapp_access_token
-WHATSAPP_PHONE_NUMBER_ID=your_whatsapp_phone_number_id
+# Railway WhatsApp Service
+RAILWAY_WHATSAPP_URL=https://your-railway-app.railway.app
+WHATSAPP_GROUP_ID=your_group_id@g.us
 
 # Admin Access
 RESET_SECRET=your_reset_secret_token
 
 # App URL (for links in messages)
-NEXT_PUBLIC_APP_URL=http://localhost:3000 # Update in production
+NEXT_PUBLIC_APP_URL=http://localhost:3000 # Update for production
 ```
 
-Then, run the development server:
+### **Step 2: Railway WhatsApp Service**
+
+The WhatsApp functionality runs on Railway for persistent connections. See the `RailwayBaileys/` directory for:
+
+- Express server with WhatsApp endpoints
+- Web interface for QR code generation
+- Persistent authentication storage
+- Auto-reconnection logic
+
+## 🛠️ Development
+
+Run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to see the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+For WhatsApp functionality in development, you'll need the Railway service running.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## ✨ Features
 
-## Features
+### **Portfolio Website**
+- Responsive design with retro pixel art theme
+- Project showcase with technology tags
+- Contact form with email notifications
 
-- Portfolio website with project showcase
-- Softball RSVP system with MongoDB backend
-- WhatsApp reminders for RSVP updates
-- Email notifications for contact form and admin actions
-- Automated weekly RSVP reset
+### **Softball RSVP System**
+- Simple name + yes/no/maybe + comments form
+- Real-time RSVP list with status indicators
+- Update existing RSVPs (prevents duplicates)
+- Admin panel for management
 
-## Learn More
+### **Automated WhatsApp Reminders**
+- **Wednesday**: Early reminder to RSVP
+- **Saturday**: Game day reminder with current counts
+- Persistent Railway connection (no QR re-scanning)
+- Web interface for QR setup and testing
 
-To learn more about Next.js, take a look at the following resources:
+### **MongoDB Integration**
+- RSVP storage and retrieval
+- Contact form submissions
+- Weekly RSVP reset functionality
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📋 Deployment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### **Option 1: Full Production Setup**
 
-## Deploy on Vercel
+1. **Deploy Railway WhatsApp Service**:
+   - See `RailwayBaileys/railway-baileys/README.md`
+   - Get your Railway app URL
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+2. **Deploy Vercel App**:
+   - Push to GitHub
+   - Import in Vercel dashboard
+   - Add environment variables (including `RAILWAY_WHATSAPP_URL`)
+   - Deploy
 
-1. Push your code to GitHub
-2. Import your repository in Vercel
-3. Add all required environment variables in your Vercel project settings
-4. Deploy!
+3. **Setup WhatsApp**:
+   - Visit Railway app URL
+   - Click "Get QR Code for Setup" 
+   - Scan with WhatsApp mobile
+   - Test integration via `/api/test-railway`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### **Option 2: Local Development**
+
+```bash
+# Start Next.js app
+npm run dev
+
+# WhatsApp testing requires Railway service
+# (or run Railway service locally on different port)
+```
+
+## 🔧 Environment Variables
+
+### **Vercel Variables**
+| Variable | Description | Required |
+|----------|-------------|-----------|
+| `MONGODB_URI` | MongoDB connection string | ✅ |
+| `SENDGRID_API_KEY` | SendGrid API key | ✅ |
+| `SENDGRID_FROM_EMAIL` | Verified sender email | ✅ |
+| `RAILWAY_WHATSAPP_URL` | Railway service URL | ✅ |
+| `WHATSAPP_GROUP_ID` | Target WhatsApp group | ✅ |
+| `RESET_SECRET` | Admin access token | ✅ |
+| `NEXT_PUBLIC_APP_URL` | Your app's public URL | ✅ |
+
+### **Railway Variables**
+| Variable | Description | Required |
+|----------|-------------|-----------|
+| `WHATSAPP_GROUP_ID` | Target WhatsApp group | ✅ |
+| `PORT` | Service port (auto-set) | Auto |
+| `NODE_ENV` | Environment | Auto |
+
+## 📚 Additional Documentation
+
+- [`VERCEL_DEPLOYMENT_GUIDE.md`](VERCEL_DEPLOYMENT_GUIDE.md) - Detailed Vercel setup
+- [`RailwayBaileys/railway-baileys/README.md`](RailwayBaileys/railway-baileys/README.md) - Railway service setup
+- [`WHATSAPP_VERCEL_SETUP.md`](WHATSAPP_VERCEL_SETUP.md) - Legacy guide (Railway recommended)
+
+## 🧪 Testing
+
+### **Test WhatsApp Integration**
+```bash
+# Test Railway connection
+GET /api/test-railway
+
+# Test message sending  
+POST /api/test-railway
+
+# Manual RSVP reminder test
+GET /api/cron/softball/saturday
+```
+
+### **Test RSVP System**
+1. Visit `/softball`
+2. Submit RSVP with name, status, comment
+3. Verify appears in RSVP list
+4. Submit again with same name (should update, not duplicate)
+
+## 📅 Automated Cron Jobs
+
+- **Monday 12:00 AM**: Reset RSVPs (`/api/cron/softball/reset`)
+- **Wednesday 12:00 PM**: Send early reminder (`/api/cron/softball/wednesday`) 
+- **Saturday 12:00 PM**: Send game day reminder (`/api/cron/softball/saturday`)
+
+All cron jobs run on Vercel and call Railway for WhatsApp messaging.
+
+## 🏆 Built With
+
+- **Frontend**: Next.js 14, TypeScript, Tailwind CSS
+- **Database**: MongoDB with Mongoose
+- **Email**: SendGrid for notifications
+- **WhatsApp**: Baileys library on Railway
+- **Deployment**: Vercel + Railway
+- **Styling**: Custom pixel art theme with Press Start 2P font
